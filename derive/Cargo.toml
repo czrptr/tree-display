@@ -1,0 +1,13 @@
+[package]
+name = "derive"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.106"
+syn = "2.0.118"
+quote = "1.0.46"
+darling = "0.23.0"
