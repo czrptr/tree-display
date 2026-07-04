@@ -4,11 +4,23 @@ use quote::quote;
 use syn::{Data, DeriveInput, Fields, Index, Member, parse_macro_input};
 
 #[derive(Debug, Default, FromField)]
-#[darling(attributes(tree), default)]
+#[darling(attributes(tree), default, and_then = Self::validate)]
 struct FieldAttributes {
   child: bool,
   ignore: bool,
   unlabeled: bool,
+  label: Option<String>,
+}
+
+impl FieldAttributes {
+  fn validate(self) -> darling::Result<Self> {
+    if self.unlabeled && self.label.is_some() {
+      return Err(darling::Error::custom(
+        "`unlabeled` and `label` cannot be used together",
+      ));
+    }
+    Ok(self)
+  }
 }
 
 #[proc_macro_derive(TreeDisplay, attributes(tree))]
@@ -91,10 +103,11 @@ fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::To
     return quote! {};
   }
 
-  let member_string = match (attributes.unlabeled, &member) {
-    (true, _) => "".into(),
-    (false, Member::Named(ident)) => ::std::format!("{}: ", ident.to_string()),
-    (false, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
+  let member_string = match (attributes.unlabeled, attributes.label, &member) {
+    (true, _, _) => "".into(),
+    (false, Some(label), _) => ::std::format!("{}: ", label),
+    (false, _, Member::Named(ident)) => ::std::format!("{}: ", ident.to_string()),
+    (false, _, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
   };
 
   if attributes.child {

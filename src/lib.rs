@@ -104,7 +104,7 @@ struct Foo1(Foo0, #[tree(child)] Option<Box<Foo2>>);
 struct Foo2 {
   #[tree(unlabeled)]
   field1: bool,
-  #[tree(child, unlabeled)]
+  #[tree(child, label = "ceva")]
   field2: Foo1,
   #[tree(child)]
   field3: Foo1,
