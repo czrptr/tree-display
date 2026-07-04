@@ -2,9 +2,68 @@ pub use derive::TreeDisplay;
 use std::rc::Rc;
 use std::sync::Arc;
 
+pub struct Field {
+  pub name: String,
+  pub value: String,
+}
+
 pub struct TreeNode {
   pub label: String,
+  pub fields: Vec<Field>,
   pub children: Vec<TreeNode>,
+}
+
+impl Field {
+  fn write(&self, out: &mut String, prefix: &str, last: bool) {
+    out.push_str(prefix);
+    out.push_str(if last { "╰─ " } else { "├─ " });
+    out.push_str(&self.name);
+    out.push_str(&self.value);
+  }
+}
+
+impl TreeNode {
+  pub fn write_root(&self, out: &mut String) {
+    out.push_str(&self.label);
+
+    let total = self.fields.len() + self.children.len();
+    let mut index = 0;
+
+    for field in &self.fields {
+      index += 1;
+      out.push('\n');
+      field.write(out, "", index == total);
+    }
+
+    for child in &self.children {
+      index += 1;
+      out.push('\n');
+      child.write(out, "", index == total);
+    }
+  }
+
+  fn write(&self, out: &mut String, prefix: &str, last: bool) {
+    out.push_str(prefix);
+    out.push_str(if last { "╰╼ " } else { "├╼ " });
+    out.push_str(&self.label);
+
+    let next_prefix = format!("{}{}", prefix, if last { "   " } else { "│  " },);
+
+    let total = self.fields.len() + self.children.len();
+    let mut index = 0;
+
+    for field in &self.fields {
+      index += 1;
+      out.push('\n');
+      field.write(out, &next_prefix, index == total);
+    }
+
+    for child in &self.children {
+      index += 1;
+      out.push('\n');
+      child.write(out, &next_prefix, index == total);
+    }
+  }
 }
 
 pub trait TreeDisplay {
@@ -29,6 +88,7 @@ impl<T: TreeDisplay> TreeDisplay for Option<T> {
       Some(value) => value.tree(),
       None => TreeNode {
         label: "None".into(),
+        fields: Vec::new(),
         children: Vec::new(),
       },
     }
@@ -39,6 +99,7 @@ impl<T: TreeDisplay> TreeDisplay for Vec<T> {
   fn tree(&self) -> TreeNode {
     TreeNode {
       label: String::from("Vec"),
+      fields: Vec::new(),
       children: self
         .iter()
         .enumerate()
@@ -61,30 +122,6 @@ impl<T: TreeDisplay + ?Sized> TreeDisplay for Rc<T> {
 impl<T: TreeDisplay + ?Sized> TreeDisplay for Arc<T> {
   fn tree(&self) -> TreeNode {
     (**self).tree()
-  }
-}
-
-impl TreeNode {
-  pub fn write_root(&self, out: &mut String) {
-    out.push_str(&self.label);
-
-    for (i, child) in self.children.iter().enumerate() {
-      out.push('\n');
-      child.write(out, "", i + 1 == self.children.len());
-    }
-  }
-
-  fn write(&self, out: &mut String, prefix: &str, last: bool) {
-    out.push_str(prefix);
-    out.push_str(if last { "└─ " } else { "├─ " });
-    out.push_str(&self.label);
-
-    let next_prefix = format!("{}{}", prefix, if last { "   " } else { "│  " },);
-
-    for (i, child) in self.children.iter().enumerate() {
-      out.push('\n');
-      child.write(out, &next_prefix, i + 1 == self.children.len());
-    }
   }
 }
 

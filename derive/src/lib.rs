@@ -54,6 +54,7 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
         fn tree(&self) -> TreeNode {
           TreeNode {
             label: ::std::string::String::from(#type_name_string),
+            fields: ::std::vec::Vec::new(),
             children: ::std::vec::Vec::new(),
           }
         }
@@ -88,14 +89,15 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   quote! {
     impl #impl_generics TreeDisplay for #type_name #ttype_generics #where_clause {
       fn tree(&self) -> TreeNode {
-        let mut properties = ::std::vec::Vec::<TreeNode>::new();
+        let mut fields = ::std::vec::Vec::<Field>::new();
         let mut children = ::std::vec::Vec::<TreeNode>::new();
 
         #(#field_handlers)*
 
         TreeNode {
           label: ::std::string::String::from(#type_name_string),
-          children: properties.into_iter().chain(children.into_iter()).collect(),
+          fields,
+          children,
         }
       }
     }
@@ -120,14 +122,15 @@ fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::To
       let node = self.#member.tree();
       children.push(TreeNode {
         label: ::std::format!("{}{}", #member_string, node.label),
+        fields: node.fields,
         children: node.children,
       });
     }
   } else {
     quote! {
-      properties.push(TreeNode {
-        label: ::std::format!("{}{:?}", #member_string, self.#member),
-        children: ::std::vec::Vec::<TreeNode>::new(),
+      fields.push(Field {
+        name: ::std::string::String::from(#member_string),
+        value: ::std::format!("{:?}", self.#member),
       });
     }
   }
