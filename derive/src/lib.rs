@@ -1,43 +1,14 @@
-use darling::Error;
+use darling::{Error, FromField};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Field, Fields, Index, Member, Meta, parse_macro_input};
+use syn::{Data, DeriveInput, Fields, Index, Member, parse_macro_input};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, FromField)]
+#[darling(attributes(tree), default)]
 struct FieldAttributes {
   child: bool,
   ignore: bool,
-  unlabled: bool,
-}
-
-impl From<&Field> for FieldAttributes {
-  fn from(field: &Field) -> Self {
-    let mut result = FieldAttributes::default();
-
-    for attribute in &field.attrs {
-      if !attribute.path().is_ident("tree") {
-        continue;
-      }
-
-      let Ok(meta) = attribute.parse_args::<Meta>() else {
-        continue;
-      };
-
-      match meta {
-        Meta::Path(path) => {
-          if path.is_ident("child") {
-            result.child = true;
-          } else if path.is_ident("ignore") {
-            result.ignore = true;
-          } else if path.is_ident("unlabled") {
-            result.unlabled = true;
-          }
-        }
-        _ => {}
-      }
-    }
-    result
-  }
+  unlabeled: bool,
 }
 
 #[proc_macro_derive(TreeDisplay, attributes(tree))]
@@ -74,34 +45,27 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
     .into();
   }
 
-  let field_handlers = match fields {
-    Fields::Named(named_fields) => named_fields
-      .named
-      .iter()
-      .map(|field| {
-        process_field(
-          Member::Named(
-            field
-              .clone()
-              .ident
-              .expect("named fields are have an identifier"),
-          ),
-          FieldAttributes::from(field),
-        )
-      })
-      .collect::<Vec<_>>(),
-    Fields::Unnamed(unnamed_fields) => unnamed_fields
-      .unnamed
-      .iter()
-      .enumerate()
-      .map(|(idx, field)| {
-        process_field(
-          Member::Unnamed(Index::from(idx)),
-          FieldAttributes::from(field),
-        )
-      })
-      .collect::<Vec<_>>(),
-    Fields::Unit => vec![],
+  let fields = match fields {
+    Fields::Named(named_fields) => named_fields.named,
+    Fields::Unnamed(unnamed_fields) => unnamed_fields.unnamed,
+    Fields::Unit => unreachable!(),
+  };
+
+  let field_handlers = match fields
+    .iter()
+    .enumerate()
+    .map(|(idx, field)| {
+      let member = match &field.ident {
+        Some(ident) => Member::Named(ident.clone()),
+        None => Member::Unnamed(Index::from(idx)),
+      };
+      let attrs = FieldAttributes::from_field(field)?;
+      Ok(process_field(member, attrs))
+    })
+    .collect::<darling::Result<Vec<_>>>()
+  {
+    Ok(handlers) => handlers,
+    Err(err) => return err.write_errors().into(),
   };
 
   quote! {
@@ -127,7 +91,7 @@ fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::To
     return quote! {};
   }
 
-  let member_string = match (attributes.unlabled, &member) {
+  let member_string = match (attributes.unlabeled, &member) {
     (true, _) => "".into(),
     (false, Member::Named(ident)) => ::std::format!("{}: ", ident.to_string()),
     (false, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
