@@ -102,7 +102,9 @@ struct Foo1(Foo0, #[tree(child)] Option<Box<Foo2>>);
 
 #[derive(Debug, TreeDisplay)]
 struct Foo2 {
+  #[tree(unlabeled)]
   field1: bool,
+  #[tree(unlabeled)]
   #[tree(child)]
   field2: Foo1,
   #[tree(child)]

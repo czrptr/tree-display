@@ -7,6 +7,7 @@ use syn::{Data, DeriveInput, Field, Fields, Index, Member, Meta, parse_macro_inp
 struct FieldAttributes {
   child: bool,
   ignore: bool,
+  unlabled: bool,
 }
 
 impl From<&Field> for FieldAttributes {
@@ -28,6 +29,8 @@ impl From<&Field> for FieldAttributes {
             result.child = true;
           } else if path.is_ident("ignore") {
             result.ignore = true;
+          } else if path.is_ident("unlabled") {
+            result.unlabled = true;
           }
         }
         _ => {}
@@ -124,23 +127,24 @@ fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::To
     return quote! {};
   }
 
-  let member_string = match &member {
-    Member::Named(ident) => ident.to_string(),
-    Member::Unnamed(index) => ::std::format!(".{}", index.index),
+  let member_string = match (attributes.unlabled, &member) {
+    (true, _) => "".into(),
+    (false, Member::Named(ident)) => ::std::format!("{}: ", ident.to_string()),
+    (false, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
   };
 
   if attributes.child {
     quote! {
       let node = self.#member.tree();
       children.push(TreeNode {
-        label: ::std::format!("{}: {}", #member_string, node.label),
+        label: ::std::format!("{}{}", #member_string, node.label),
         children: node.children,
       });
     }
   } else {
     quote! {
       properties.push(TreeNode {
-        label: ::std::format!("{}: {:?}", #member_string, self.#member),
+        label: ::std::format!("{}{:?}", #member_string, self.#member),
         children: ::std::vec::Vec::<TreeNode>::new(),
       });
     }
