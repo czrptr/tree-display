@@ -19,6 +19,11 @@ impl FieldAttributes {
         "`unlabeled` and `label` cannot be used together",
       ));
     }
+    if self.ignore && (self.child || self.unlabeled || self.label.is_some()) {
+      return Err(darling::Error::custom(
+        "`ignore` cannot be combined with any other attribute",
+      ));
+    }
     Ok(self)
   }
 }
