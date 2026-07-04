@@ -1,38 +1,120 @@
 pub use derive::TreeDisplay;
-use std::fmt;
+use std::rc::Rc;
+use std::sync::Arc;
 
-pub trait TreeDisplay {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+pub struct TreeNode {
+  pub label: String,
+  pub children: Vec<TreeNode>,
 }
 
-pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
-  struct TreeDisplayWrapper<'a, T: TreeDisplay>(pub &'a T);
+pub trait TreeDisplay {
+  fn tree(&self) -> TreeNode;
+}
 
-  impl<'a, T: TreeDisplay> fmt::Display for TreeDisplayWrapper<'a, T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-      self.0.fmt(f)
+impl<T: TreeDisplay + ?Sized> TreeDisplay for Box<T> {
+  fn tree(&self) -> TreeNode {
+    (**self).tree()
+  }
+}
+
+impl<T: TreeDisplay + ?Sized> TreeDisplay for &T {
+  fn tree(&self) -> TreeNode {
+    (**self).tree()
+  }
+}
+
+impl<T: TreeDisplay> TreeDisplay for Option<T> {
+  fn tree(&self) -> TreeNode {
+    match self {
+      Some(value) => value.tree(),
+      None => TreeNode {
+        label: "None".into(),
+        children: Vec::new(),
+      },
+    }
+  }
+}
+
+impl<T: TreeDisplay> TreeDisplay for Vec<T> {
+  fn tree(&self) -> TreeNode {
+    TreeNode {
+      label: String::from("Vec"),
+      children: self
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+          let mut node = item.tree();
+          node.label = format!("[{}]: {}", i, node.label);
+          node
+        })
+        .collect(),
+    }
+  }
+}
+
+impl<T: TreeDisplay + ?Sized> TreeDisplay for Rc<T> {
+  fn tree(&self) -> TreeNode {
+    (**self).tree()
+  }
+}
+
+impl<T: TreeDisplay + ?Sized> TreeDisplay for Arc<T> {
+  fn tree(&self) -> TreeNode {
+    (**self).tree()
+  }
+}
+
+impl TreeNode {
+  pub fn write_root(&self, out: &mut String) {
+    out.push_str(&self.label);
+
+    for (i, child) in self.children.iter().enumerate() {
+      out.push('\n');
+      child.write(out, "", i + 1 == self.children.len());
     }
   }
 
-  format!("{}", TreeDisplayWrapper(value))
+  fn write(&self, out: &mut String, prefix: &str, last: bool) {
+    out.push_str(prefix);
+    out.push_str(if last { "└─ " } else { "├─ " });
+    out.push_str(&self.label);
+
+    let next_prefix = format!("{}{}", prefix, if last { "   " } else { "│  " },);
+
+    for (i, child) in self.children.iter().enumerate() {
+      out.push('\n');
+      child.write(out, &next_prefix, i + 1 == self.children.len());
+    }
+  }
 }
 
-#[derive(Debug, Default, TreeDisplay)]
-struct Foo1(Box<Foo2>);
+pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
+  let mut result = String::new();
+  value.tree().write_root(&mut result);
+  result
+}
 
-#[derive(Debug, Default, TreeDisplay)]
+#[derive(Debug, TreeDisplay)]
+struct Foo0();
+
+#[derive(Debug, TreeDisplay)]
+struct Foo1(Foo0, #[tree(child)] Option<Box<Foo2>>);
+
+#[derive(Debug, TreeDisplay)]
 struct Foo2 {
-  #[tree(inline)]
   field1: bool,
+  #[tree(child)]
   field2: Foo1,
-  #[tree(inline)]
+  #[tree(child)]
   field3: Foo1,
-  field4: Foo1,
+  #[tree(child)]
+  field4: Vec<Foo1>,
   #[tree(ignore)]
   ignored: u32,
 }
+
 // #[derive(TreeDisplay)]
-enum Foo3 {}
+// enum Foo3 {}
 
 #[cfg(test)]
 mod tests {
@@ -40,6 +122,22 @@ mod tests {
 
   #[test]
   fn some_test() {
-    print!("-------\n{}\n-------\n", tree_format(&Foo2::default()));
+    let tree = Foo2 {
+      field1: true,
+      field2: Foo1(
+        Foo0(),
+        Some(Box::new(Foo2 {
+          field1: false,
+          field2: Foo1(Foo0(), None),
+          field3: Foo1(Foo0(), None),
+          field4: vec![Foo1(Foo0(), None)],
+          ignored: 0,
+        })),
+      ),
+      field3: Foo1(Foo0(), None),
+      field4: vec![Foo1(Foo0(), None)],
+      ignored: 0,
+    };
+    print!("-------\n{}\n-------\n", tree_format(&tree));
   }
 }

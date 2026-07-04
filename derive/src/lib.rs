@@ -1,12 +1,12 @@
 use darling::Error;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Field, Fields, Index, Meta, parse_macro_input};
+use syn::{Data, DeriveInput, Field, Fields, Index, Member, Meta, parse_macro_input};
 
 #[derive(Debug, Default)]
 struct FieldAttributes {
+  child: bool,
   ignore: bool,
-  inline: bool,
 }
 
 impl From<&Field> for FieldAttributes {
@@ -24,13 +24,10 @@ impl From<&Field> for FieldAttributes {
 
       match meta {
         Meta::Path(path) => {
-          // #[tree(ignore)]
-          if path.is_ident("ignore") {
+          if path.is_ident("child") {
+            result.child = true;
+          } else if path.is_ident("ignore") {
             result.ignore = true;
-          }
-          // #[tree(inline)]
-          else if path.is_ident("inline") {
-            result.inline = true;
           }
         }
         _ => {}
@@ -63,9 +60,11 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   if is_empty_type {
     return quote! {
       impl #impl_generics TreeDisplay for #type_name #ttype_generics #where_clause {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-          write!(f, "{}", #type_name_string)?;
-          Ok(())
+        fn tree(&self) -> TreeNode {
+          TreeNode {
+            label: ::std::string::String::from(#type_name_string),
+            children: ::std::vec::Vec::new(),
+          }
         }
       }
     }
@@ -76,83 +75,74 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
     Fields::Named(named_fields) => named_fields
       .named
       .iter()
-      .enumerate()
-      .map(|(idx, field)| process_field(idx, field, FieldAttributes::from(field)))
+      .map(|field| {
+        process_field(
+          Member::Named(
+            field
+              .clone()
+              .ident
+              .expect("named fields are have an identifier"),
+          ),
+          FieldAttributes::from(field),
+        )
+      })
       .collect::<Vec<_>>(),
     Fields::Unnamed(unnamed_fields) => unnamed_fields
       .unnamed
       .iter()
       .enumerate()
-      .map(|(idx, field)| process_field(idx, field, FieldAttributes::from(field)))
+      .map(|(idx, field)| {
+        process_field(
+          Member::Unnamed(Index::from(idx)),
+          FieldAttributes::from(field),
+        )
+      })
       .collect::<Vec<_>>(),
     Fields::Unit => vec![],
   };
 
   quote! {
     impl #impl_generics TreeDisplay for #type_name #ttype_generics #where_clause {
-      fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut inline_parts = Vec::<String>::new();
-        let mut child_parts = Vec::<String>::new();
+      fn tree(&self) -> TreeNode {
+        let mut properties = ::std::vec::Vec::<TreeNode>::new();
+        let mut children = ::std::vec::Vec::<TreeNode>::new();
 
         #(#field_handlers)*
 
-        write!(f, "{}", #type_name_string)?;
-
-        // Write inline fields
-        if !inline_parts.is_empty() {
-          write!(f, " ─ {}", inline_parts.join(", "))?;
+        TreeNode {
+          label: ::std::string::String::from(#type_name_string),
+          children: properties.into_iter().chain(children.into_iter()).collect(),
         }
-
-        // Write child fields
-        if !child_parts.is_empty() {
-          if let Some((last, rest)) = child_parts.split_last() {
-            for child in rest {
-              write!(f, "\n├─ {}", child)?;
-            }
-            write!(f, "\n└─ {}", last)?;
-          }
-        }
-
-        Ok(())
       }
     }
   }
   .into()
 }
 
-fn process_field(
-  field_index: usize,
-  field: &Field,
-  attributes: FieldAttributes,
-) -> proc_macro2::TokenStream {
+fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::TokenStream {
   if attributes.ignore {
     return quote! {};
   }
 
-  if let Some(ident) = field.ident.as_ref() {
-    let field_name = ident.to_string();
+  let member_string = match &member {
+    Member::Named(ident) => ident.to_string(),
+    Member::Unnamed(index) => ::std::format!(".{}", index.index),
+  };
 
-    if attributes.inline {
-      quote! {
-        inline_parts.push(::std::format!("{}: {:?}", #field_name, self.#ident));
-      }
-    } else {
-      quote! {
-        child_parts.push(::std::format!("{}: {:?}", #field_name, self.#ident));
-      }
+  if attributes.child {
+    quote! {
+      let node = self.#member.tree();
+      children.push(TreeNode {
+        label: ::std::format!("{}: {}", #member_string, node.label),
+        children: node.children,
+      });
     }
   } else {
-    let field_name = format!(".{:?}", field_index);
-    let index = Index::from(field_index);
-
-    if attributes.inline {
-      quote! {
-        inline_parts.push(::std::format!("{}: {:?}", #field_name, self.#index));
-      }
-    } else {
-      quote! {
-        child_parts.push(::std::format!("{}: {:?}", #field_name, self.#index));
-      }
+    quote! {
+      properties.push(TreeNode {
+        label: ::std::format!("{}: {:?}", #member_string, self.#member),
+        children: ::std::vec::Vec::<TreeNode>::new(),
+      });
     }
   }
 }
