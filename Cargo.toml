@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 derive = { path = "./derive", version = "0.1.0"}
+anstyle = "1.0.14"
 
 [workspace]
 members = ["derive"]

@@ -1,6 +1,30 @@
+use anstyle::{Ansi256Color, Color, Style};
 pub use derive::TreeDisplay;
 use std::rc::Rc;
 use std::sync::Arc;
+
+pub trait Styled {
+  fn styled(&self, style: &Style) -> String;
+}
+
+impl<T: AsRef<str>> Styled for T {
+  fn styled(&self, style: &Style) -> String {
+    let text = self.as_ref();
+
+    let style_intro = style.render().to_string();
+    let style_reset = style.render_reset().to_string();
+
+    let mut out = String::with_capacity(text.len() + style_intro.len() + style_reset.len());
+
+    out.push_str(&style_intro);
+    out.push_str(text);
+    out.push_str(&style_reset);
+
+    out
+  }
+}
+
+const LINE: &Style = &Style::new().fg_color(Some(Color::Ansi256(Ansi256Color(243))));
 
 pub struct Field {
   pub name: String,
@@ -16,7 +40,7 @@ pub struct TreeNode {
 impl Field {
   fn write(&self, out: &mut String, prefix: &str, last: bool) {
     out.push_str(prefix);
-    out.push_str(if last { "╰─ " } else { "├─ " });
+    out.push_str(&(if last { "╰─ " } else { "├─ " }).styled(LINE));
     out.push_str(&self.name);
     out.push_str(&self.value);
   }
@@ -44,10 +68,14 @@ impl TreeNode {
 
   fn write(&self, out: &mut String, prefix: &str, last: bool) {
     out.push_str(prefix);
-    out.push_str(if last { "╰╼ " } else { "├╼ " });
+    out.push_str(&(if last { "╰╼ " } else { "├╼ " }).styled(LINE));
     out.push_str(&self.label);
 
-    let next_prefix = format!("{}{}", prefix, if last { "   " } else { "│  " },);
+    let next_prefix = format!(
+      "{}{}",
+      prefix,
+      (if last { "   " } else { "│  " }).styled(LINE)
+    );
 
     let total = self.fields.len() + self.children.len();
     let mut index = 0;
