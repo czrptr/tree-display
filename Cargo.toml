@@ -1,11 +1,15 @@
 [package]
 name = "tree-display"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 derive = { path = "./derive", version = "0.1.0"}
 anstyle = "1.0"
 
-[workspace]
-members = ["derive"]
+# Optional dependencies
+chumsky = { version = "0.12.0", optional = true }
+
+[features]
+default = []
+chumsky = ["dep:chumsky"]
