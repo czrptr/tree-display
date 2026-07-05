@@ -237,7 +237,10 @@ fn process_field(
       let node = #access.tree();
       children.push(crate::tree_display::TreeNode {
         label: ::std::format!("{}{}", #member_string, node.label),
-        fields: node.fields,
+        fields: node.fields.into_iter().map(|f| crate::tree_display::Field {
+          name: ::std::format!("{}: ", f.name),
+          value: f.value,
+        }).collect(),
         children: node.children,
       });
     }

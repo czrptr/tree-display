@@ -126,7 +126,10 @@ impl<T: TreeDisplay> TreeDisplay for Vec<T> {
   fn tree(&self) -> TreeNode {
     TreeNode {
       label: String::from("Vec"),
-      fields: Vec::new(),
+      fields: vec![Field {
+        name: "len".into(),
+        value: self.len().to_string(),
+      }],
       children: self
         .iter()
         .enumerate()
