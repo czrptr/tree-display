@@ -1,7 +1,8 @@
 use darling::{Error, FromField};
 use proc_macro::TokenStream;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, Index, Member, Variant, parse_macro_input};
+use syn::{Data, DeriveInput, Fields, Ident, Index, Member, Variant, parse_macro_input};
 
 #[derive(Debug, Default, FromField)]
 #[darling(attributes(tree), default, and_then = Self::validate)]
@@ -56,7 +57,7 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   .into()
 }
 
-fn derive_struct(type_name_string: &str, fields: Fields) -> proc_macro2::TokenStream {
+fn derive_struct(type_name_string: &str, fields: Fields) -> TokenStream2 {
   let is_empty_type = matches!(&fields, Fields::Unit)
     || matches!(&fields, Fields::Unnamed(unnamed) if unnamed.unnamed.is_empty());
 
@@ -85,7 +86,7 @@ fn derive_struct(type_name_string: &str, fields: Fields) -> proc_macro2::TokenSt
         None => Member::Unnamed(Index::from(idx)),
       };
       let attrs = FieldAttributes::from_field(field)?;
-      Ok(process_field(member, attrs))
+      Ok(process_field(quote! {self.#member}, member, attrs))
     })
     .collect::<darling::Result<Vec<_>>>()
   {
@@ -107,11 +108,119 @@ fn derive_struct(type_name_string: &str, fields: Fields) -> proc_macro2::TokenSt
   }
 }
 
-fn derive_enum(_type_name_string: &str, _variants: Vec<Variant>) -> proc_macro2::TokenStream {
-  quote! {}
+fn derive_enum(_type_name_string: &str, variants: Vec<Variant>) -> TokenStream2 {
+  let mut arms = Vec::new();
+  for variant in variants {
+    let variant_identifier = variant.ident;
+    let variant_identifier_string = variant_identifier.to_string();
+
+    match variant.fields {
+      Fields::Unit => {
+        arms.push(quote! {
+          Self::#variant_identifier => crate::tree_display::TreeNode {
+            label: ::std::string::String::from(#variant_identifier_string),
+            fields: ::std::vec::Vec::new(),
+            children: ::std::vec::Vec::new(),
+          }
+        });
+      }
+
+      Fields::Named(fields) => {
+        let bindings = fields
+          .named
+          .iter()
+          .map(|f| f.ident.clone().unwrap())
+          .collect::<Vec<_>>();
+
+        let handlers = match fields
+          .named
+          .iter()
+          .enumerate()
+          .map(|(idx, field)| {
+            let attrs = FieldAttributes::from_field(field)?;
+            let ident = &bindings[idx];
+            Ok(process_field(
+              quote! {#ident},
+              Member::Named(ident.clone()),
+              attrs,
+            ))
+          })
+          .collect::<darling::Result<Vec<_>>>()
+        {
+          Ok(x) => x,
+          Err(err) => return err.write_errors(),
+        };
+
+        arms.push(quote! {
+          Self::#variant_identifier{ #( #bindings ),* } => {
+            let mut fields = ::std::vec::Vec::<crate::tree_display::Field>::new();
+            let mut children = ::std::vec::Vec::<crate::tree_display::TreeNode>::new();
+
+            #(#handlers)*
+
+            crate::tree_display::TreeNode {
+              label: ::std::string::String::from(#variant_identifier_string),
+              fields,
+              children,
+            }
+          }
+        });
+      }
+
+      Fields::Unnamed(fields) => {
+        let bindings = (0..fields.unnamed.len())
+          .map(|i| Ident::new(&format!("__field{i}"), Span::call_site()))
+          .collect::<Vec<_>>();
+
+        let handlers = match fields
+          .unnamed
+          .iter()
+          .enumerate()
+          .map(|(idx, field)| {
+            let attrs = FieldAttributes::from_field(field)?;
+            let ident = &bindings[idx];
+            Ok(process_field(
+              quote! {#ident},
+              Member::Unnamed(Index::from(idx)),
+              attrs,
+            ))
+          })
+          .collect::<darling::Result<Vec<_>>>()
+        {
+          Ok(x) => x,
+          Err(err) => return err.write_errors(),
+        };
+
+        arms.push(quote! {
+          Self::#variant_identifier( #( #bindings ),* ) => {
+            let mut fields = ::std::vec::Vec::<crate::tree_display::Field>::new();
+            let mut children = ::std::vec::Vec::<crate::tree_display::TreeNode>::new();
+
+            #(#handlers)*
+
+            crate::tree_display::TreeNode {
+              label: ::std::string::String::from(#variant_identifier_string),
+              fields,
+              children,
+            }
+          }
+        });
+      }
+    }
+  }
+
+  quote! {
+    match self {
+      #(#arms),*
+    }
+  }
 }
 
-fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::TokenStream {
+fn process_field(
+  access: TokenStream2,
+  member: Member,
+  attributes: FieldAttributes,
+) -> TokenStream2 {
   if attributes.ignore {
     return quote! {};
   }
@@ -125,7 +234,7 @@ fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::To
 
   if attributes.child {
     quote! {
-      let node = self.#member.tree();
+      let node = #access.tree();
       children.push(crate::tree_display::TreeNode {
         label: ::std::format!("{}{}", #member_string, node.label),
         fields: node.fields,
@@ -136,7 +245,7 @@ fn process_field(member: Member, attributes: FieldAttributes) -> proc_macro2::To
     quote! {
       fields.push(crate::tree_display::Field {
         name: ::std::string::String::from(#member_string),
-        value: ::std::format!("{:?}", self.#member),
+        value: ::std::format!("{:?}", #access),
       });
     }
   }
