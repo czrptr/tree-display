@@ -2,7 +2,49 @@ use anstyle::{Ansi256Color, Color, Style};
 use std::rc::Rc;
 use std::sync::Arc;
 
-pub trait Styled {
+// ──── API ───────────────────────────────────────────────────────────────────────────────────────
+pub trait TreeDisplay {
+  fn tree(&self) -> TreeNode;
+}
+
+pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
+  let mut result = String::new();
+  value.tree().write_root(&mut result);
+  result
+}
+
+pub struct Field {
+  pub name: String,
+  pub value: String,
+}
+
+pub struct TreeNode {
+  pub label: String,
+  pub fields: Vec<Field>,
+  pub children: Vec<TreeNode>,
+}
+
+impl TreeNode {
+  pub fn new(label: impl Into<String>, fields: Vec<Field>, children: Vec<TreeNode>) -> TreeNode {
+    TreeNode {
+      label: label.into(),
+      fields,
+      children,
+    }
+  }
+
+  pub fn leaf(label: impl Into<String>) -> TreeNode {
+    TreeNode {
+      label: label.into(),
+      fields: Vec::new(),
+      children: Vec::new(),
+    }
+  }
+}
+
+// ──── Impl ──────────────────────────────────────────────────────────────────────────────────────
+
+trait Styled {
   fn styled(&self, style: &Style) -> String;
 }
 
@@ -25,17 +67,6 @@ impl<T: AsRef<str>> Styled for T {
 
 const LINE: &Style = &Style::new().fg_color(Some(Color::Ansi256(Ansi256Color(243))));
 
-pub struct Field {
-  pub name: String,
-  pub value: String,
-}
-
-pub struct TreeNode {
-  pub label: String,
-  pub fields: Vec<Field>,
-  pub children: Vec<TreeNode>,
-}
-
 impl Field {
   fn write(&self, out: &mut String, prefix: &str, last: bool) {
     out.push_str(prefix);
@@ -46,7 +77,7 @@ impl Field {
 }
 
 impl TreeNode {
-  pub fn write_root(&self, out: &mut String) {
+  fn write_root(&self, out: &mut String) {
     out.push_str(&self.label);
 
     let total = self.fields.len() + self.children.len();
@@ -91,10 +122,6 @@ impl TreeNode {
       child.write(out, &next_prefix, index == total);
     }
   }
-}
-
-pub trait TreeDisplay {
-  fn tree(&self) -> TreeNode;
 }
 
 impl<T: TreeDisplay + ?Sized> TreeDisplay for Box<T> {
@@ -153,10 +180,4 @@ impl<T: TreeDisplay + ?Sized> TreeDisplay for Arc<T> {
   fn tree(&self) -> TreeNode {
     (**self).tree()
   }
-}
-
-pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
-  let mut result = String::new();
-  value.tree().write_root(&mut result);
-  result
 }
