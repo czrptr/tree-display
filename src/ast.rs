@@ -1,4 +1,4 @@
-use crate::tree_display::TreeDisplay;
+use crate::tree_display::{Tree, TreeDisplay};
 use derive::TreeDisplay;
 
 pub type NameId = u32;
@@ -7,21 +7,21 @@ pub type Span = u32;
 
 // ──── Spanned lexeme ────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TreeDisplay)]
-pub struct Spanned<T>
-where
-  T: TreeDisplay,
-{
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Spanned<T> {
   pub kind: T,
   pub span: Span,
 }
 
-impl<T> From<(T, Span)> for Spanned<T>
-where
-  T: TreeDisplay,
-{
+impl<T> From<(T, Span)> for Spanned<T> {
   fn from((kind, span): (T, Span)) -> Self {
     Self { kind, span }
+  }
+}
+
+impl<T: TreeDisplay> TreeDisplay for Spanned<T> {
+  fn tree(&self) -> Tree {
+    Tree::new("Spanned", vec![self.kind.tree(), self.span.tree()])
   }
 }
 

@@ -11,6 +11,10 @@ fn field_to_member(index: usize, field: &Field) -> Member {
   }
 }
 
+fn string_to_ident(name: impl AsRef<str>) -> Ident {
+  Ident::new(name.as_ref(), Span::call_site())
+}
+
 #[derive(Debug, Default, FromField)]
 #[darling(attributes(tree), default, and_then = Self::validate)]
 struct FieldAttributes {
@@ -62,15 +66,25 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
 }
 
 fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
+  let type_name = type_ident.to_string();
+
   let is_empty_type = matches!(&fields, Fields::Unit)
     || matches!(&fields, Fields::Unnamed(unnamed) if unnamed.unnamed.is_empty())
     || matches!(&fields, Fields::Named(named) if named.named.is_empty());
 
-  let type_name = type_ident.to_string();
-
   if is_empty_type {
     return quote! {
       crate::tree_display::Tree::leaf(#type_name)
+    };
+  }
+
+  let is_newtype = matches!(fields, Fields::Unnamed(_)) && fields.len() == 1;
+
+  if is_newtype {
+    let field = fields.iter().next().expect("there is exactly one element");
+    let member = field_to_member(0, field);
+    return quote! {
+      self.#member.tree()
     };
   }
 
@@ -152,8 +166,19 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
       }
 
       Fields::Unnamed(fields) => {
+        let is_newtype = fields.unnamed.len() == 1;
+        if is_newtype {
+          // For newtype variants, forward directly without wrapping
+          let ident = string_to_ident("__field0");
+          arms.push(quote! {
+              Self::#variant_ident( #ident ) => {
+                #ident.tree()
+              }
+          });
+        }
+
         let bindings = (0..fields.unnamed.len())
-          .map(|i| Ident::new(&format!("__field{i}"), Span::call_site()))
+          .map(|i| string_to_ident(format!("__field{i}")))
           .collect::<Vec<_>>();
 
         let handlers = match fields
