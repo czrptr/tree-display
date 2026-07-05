@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use anstyle::{Ansi256Color, Color, Style};
 use std::rc::Rc;
 use std::sync::Arc;

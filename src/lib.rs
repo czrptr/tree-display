@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 pub use derive::TreeDisplay;
 
 mod ast;

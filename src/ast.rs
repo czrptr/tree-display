@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::tree_display::{Tree, TreeDisplay};
 use derive::TreeDisplay;
 
