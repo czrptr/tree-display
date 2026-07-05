@@ -14,7 +14,6 @@ fn field_to_member(index: usize, field: &Field) -> Member {
 #[derive(Debug, Default, FromField)]
 #[darling(attributes(tree), default, and_then = Self::validate)]
 struct FieldAttributes {
-  child: bool,
   ignore: bool,
   unlabeled: bool,
   label: Option<String>,
@@ -27,7 +26,7 @@ impl FieldAttributes {
         "`unlabeled` and `label` cannot be used together",
       ));
     }
-    if self.ignore && (self.child || self.unlabeled || self.label.is_some()) {
+    if self.ignore && (self.unlabeled || self.label.is_some()) {
       return Err(darling::Error::custom(
         "`ignore` cannot be combined with any other attribute",
       ));
@@ -54,7 +53,7 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
 
   quote! {
     impl #impl_generics crate::tree_display::TreeDisplay for #type_ident #type_generics #where_clause {
-      fn tree(&self) -> crate::tree_display::TreeNode {
+      fn tree(&self) -> crate::tree_display::Tree {
         #body
       }
     }
@@ -71,7 +70,7 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
 
   if is_empty_type {
     return quote! {
-      crate::tree_display::TreeNode::leaf(#type_name)
+      crate::tree_display::Tree::leaf(#type_name)
     };
   }
 
@@ -96,12 +95,9 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   };
 
   quote! {
-    let mut fields = ::std::vec::Vec::<crate::tree_display::Field>::new();
-    let mut children = ::std::vec::Vec::<crate::tree_display::TreeNode>::new();
-
+    let mut subtrees = ::std::vec::Vec::<crate::tree_display::Tree>::new();
     #(#field_handlers)*
-
-    crate::tree_display::TreeNode::new(#type_name, fields, children)
+    crate::tree_display::Tree::new(#type_name, subtrees)
   }
 }
 
@@ -114,7 +110,7 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
     match variant.fields {
       Fields::Unit => {
         arms.push(quote! {
-          Self::#variant_ident => crate::tree_display::TreeNode::leaf(#variant_name)
+            Self::#variant_ident => crate::tree_display::Tree::leaf(#variant_name)
         });
       }
 
@@ -146,12 +142,11 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
 
         arms.push(quote! {
           Self::#variant_ident{ #( #bindings ),* } => {
-            let mut fields = ::std::vec::Vec::<crate::tree_display::Field>::new();
-            let mut children = ::std::vec::Vec::<crate::tree_display::TreeNode>::new();
+            let mut subtrees = ::std::vec::Vec::<crate::tree_display::Tree>::new();
 
             #(#handlers)*
 
-            crate::tree_display::TreeNode::new(#variant_name, fields, children)
+            crate::tree_display::Tree::new(#variant_name, subtrees)
           }
         });
       }
@@ -182,12 +177,11 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
 
         arms.push(quote! {
           Self::#variant_ident( #( #bindings ),* ) => {
-            let mut fields = ::std::vec::Vec::<crate::tree_display::Field>::new();
-            let mut children = ::std::vec::Vec::<crate::tree_display::TreeNode>::new();
+            let mut subtrees = ::std::vec::Vec::<crate::tree_display::Tree>::new();
 
             #(#handlers)*
 
-            crate::tree_display::TreeNode::new(#variant_name, fields, children)
+            crate::tree_display::Tree::new(#variant_name, subtrees)
           }
         });
       }
@@ -217,23 +211,18 @@ fn process_field(
     (false, _, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
   };
 
-  if attributes.child {
-    quote! {
-      let node = #access.tree();
-      children.push(crate::tree_display::TreeNode {
+  quote! {
+    let node = #access.tree();
+    if node.is_leaf() {
+      // Leaf: render as a field (inline)
+      subtrees.push(crate::tree_display::Tree::leaf(
+        ::std::format!("{}{}", #member_string, node.label)
+      ));
+    } else {
+      // Node: render as a subtree with children
+      subtrees.push(crate::tree_display::Tree {
         label: ::std::format!("{}{}", #member_string, node.label),
-        fields: node.fields.into_iter().map(|f| crate::tree_display::Field {
-          name: ::std::format!("{}: ", f.name),
-          value: f.value,
-        }).collect(),
-        children: node.children,
-      });
-    }
-  } else {
-    quote! {
-      fields.push(crate::tree_display::Field {
-        name: ::std::string::String::from(#member_string),
-        value: ::std::format!("{:?}", #access),
+        subtrees: node.subtrees,
       });
     }
   }

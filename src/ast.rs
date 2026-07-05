@@ -1,4 +1,4 @@
-use crate::tree_display::{TreeDisplay, TreeNode};
+use crate::tree_display::TreeDisplay;
 use derive::TreeDisplay;
 
 pub type NameId = u32;
@@ -7,13 +7,19 @@ pub type Span = u32;
 
 // ──── Spanned lexeme ────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Spanned<T> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TreeDisplay)]
+pub struct Spanned<T>
+where
+  T: TreeDisplay,
+{
   pub kind: T,
   pub span: Span,
 }
 
-impl<T> From<(T, Span)> for Spanned<T> {
+impl<T> From<(T, Span)> for Spanned<T>
+where
+  T: TreeDisplay,
+{
   fn from((kind, span): (T, Span)) -> Self {
     Self { kind, span }
   }
@@ -23,34 +29,34 @@ impl<T> From<(T, Span)> for Spanned<T> {
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub enum Ast {
-  Identifier(#[tree(child)] Identifier),
-  Integer(#[tree(child)] Integer),
+  Identifier(Identifier),
+  Integer(Integer),
   Float(Float),
   Char(Char),
-  String(#[tree(child)] StringLiteral),
+  String(StringLiteral),
   Tuple(Tuple),
   Array(Array),
-  Let(#[tree(child)] Let),
+  Let(Let),
   Record(Record),
-  Call(#[tree(child)] Call),
+  Call(Call),
   Index(Index),
   With(With),
-  Block(#[tree(child)] Block),
+  Block(Block),
   Prefix(Prefix),
-  Binary(#[tree(child)] Binary),
+  Binary(Binary),
   Postfix(Postfix),
-  Range(#[tree(child)] Range),
-  Return(#[tree(child)] Return),
-  Yield(#[tree(child)] Yield),
+  Range(Range),
+  Return(Return),
+  Yield(Yield),
   Break(Break),
   Continue(Continue),
-  If(#[tree(child)] If),
-  Match(#[tree(child)] Match),
-  For(#[tree(child)] For),
-  While(#[tree(child)] While),
+  If(If),
+  Match(Match),
+  For(For),
+  While(While),
   Loop(Loop),
   Do(Do),
-  Fn(#[tree(child)] Fn),
+  Fn(Fn),
   Attribute(Attribute),
   RecordDef(RecordDef),
   EnumDef(EnumDef),
@@ -71,13 +77,7 @@ pub enum Ast {
 // ──── Wrapper types ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct Elements(#[tree(child)] pub Vec<(Box<Ast>, Option<Span>)>);
-
-impl TreeDisplay for (Box<Ast>, Option<Span>) {
-  fn tree(&self) -> TreeNode {
-    self.0.tree()
-  }
-}
+pub struct Elements(pub Vec<(Box<Ast>, Option<Span>)>);
 
 // ──── Literal ───────────────────────────────────────────────────────────────────────────────────
 
@@ -90,10 +90,10 @@ pub struct Identifier {
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Integer(pub Span);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Float(pub Span);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Char(pub Span);
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
@@ -101,21 +101,21 @@ pub struct StringLiteral(pub Span);
 
 // ──── Aggregate ──────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Tuple {
   pub opener: Span,
   pub elements: Elements,
   pub closer: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Array {
   pub opener: Span,
   pub elements: Elements,
   pub closer: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Record {
   pub ty: Box<Ast>,
   pub opener: Span,
@@ -128,18 +128,12 @@ pub struct Record {
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Arg {
   pub label: Option<(Span, Span)>,
-  #[tree(child)]
+
   pub value: Ast,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct Args(#[tree(child)] pub Vec<(Arg, Option<Span>)>);
-
-impl TreeDisplay for (Arg, Option<Span>) {
-  fn tree(&self) -> TreeNode {
-    self.0.tree()
-  }
-}
+pub struct Args(pub Vec<(Arg, Option<Span>)>);
 
 // ──── Let ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -147,18 +141,18 @@ impl TreeDisplay for (Arg, Option<Span>) {
 pub struct Let {
   pub kw_let: Span,
   pub kw_mut: Option<Span>,
-  #[tree(child)]
+
   pub binding: Box<Ast>,
-  #[tree(child)]
+
   pub ty: MaybeTypeAnnotation,
   pub op_eq: Span,
-  #[tree(child)]
+
   pub value: Box<Ast>,
 }
 
 // ──── Type Annotation ───────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct TypeAnnotation {
   pub span: Span,
   pub value: Box<Ast>,
@@ -171,17 +165,16 @@ pub struct MaybeTypeAnnotation(pub Option<TypeAnnotation>);
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Call {
-  #[tree(child)]
   pub target: Box<Ast>,
   pub opener: Span,
-  #[tree(child)]
+
   pub args: Args,
   pub closer: Span,
 }
 
 // ──── Array/tuple access ────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Index {
   pub target: Box<Ast>,
   pub access: Box<Ast>,
@@ -189,7 +182,7 @@ pub struct Index {
 
 // ──── With ──────────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct With {
   pub target: Box<Ast>,
   pub kw_with: Span,
@@ -203,12 +196,12 @@ pub struct With {
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Block {
   pub opener: Span,
-  #[tree(child)]
+
   pub elements: Elements,
   pub closer: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Do {
   pub kw: Span,
   pub body: Box<Ast>,
@@ -216,7 +209,7 @@ pub struct Do {
 
 // ──── Operators ─────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Prefix {
   pub op: Spanned<Operator>,
   pub rhs: Box<Ast>,
@@ -224,14 +217,13 @@ pub struct Prefix {
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Binary {
-  #[tree(child)]
   pub lhs: Box<Ast>,
   pub op: Spanned<Operator>,
-  #[tree(child)]
+
   pub rhs: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Postfix {
   pub lhs: Box<Ast>,
   pub op: Spanned<Operator>,
@@ -239,34 +231,33 @@ pub struct Postfix {
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Range {
-  #[tree(child)]
   pub begin: MaybeAst,
   pub op: Span,
-  #[tree(child)]
+
   pub end: MaybeAst,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Return {
   pub kw: Span,
-  #[tree(child)]
+
   pub value: MaybeAst,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Yield {
   pub kw: Span,
-  #[tree(child)]
+
   pub value: MaybeAst,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Break {
   pub kw: Span,
   pub label: Option<Span>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Continue {
   pub kw: Span,
   pub label: Option<Span>,
@@ -277,87 +268,74 @@ pub struct Continue {
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct If {
   pub kw: Span,
-  #[tree(child)]
+
   pub condition: Box<Ast>,
-  #[tree(child)]
+
   pub block: Box<Ast>,
-  #[tree(child)]
+
   pub eelse: MaybeElse,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Else {
   pub kw: Span,
-  #[tree(child)]
+
   pub block: Box<Ast>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct MaybeElse(#[tree(child)] pub Option<Else>);
+pub struct MaybeElse(pub Option<Else>);
 
 // ──── Match ─────────────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Match {
   pub kw: Span,
-  #[tree(child)]
+
   pub subject: Box<Ast>,
   pub opener: Span,
-  #[tree(child)]
+
   pub cases: MatchCases,
   pub closer: Span,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct MatchCase {
-  #[tree(child)]
   pub pattern: Box<Ast>,
-  #[tree(child)]
+
   pub guard: Option<(Span, Box<Ast>)>,
   pub arrow: Span,
-  #[tree(child)]
+
   pub body: Box<Ast>,
 }
 
-impl TreeDisplay for (Span, Box<Ast>) {
-  fn tree(&self) -> TreeNode {
-    self.1.tree()
-  }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct MatchCases(#[tree(child)] pub Vec<(MatchCase, Option<Span>)>);
-
-impl TreeDisplay for (MatchCase, Option<Span>) {
-  fn tree(&self) -> TreeNode {
-    self.0.tree()
-  }
-}
+pub struct MatchCases(pub Vec<(MatchCase, Option<Span>)>);
 
 // ──── Loops ─────────────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct For {
   pub kw: Span,
-  #[tree(child)]
+
   pub binding: Box<Ast>,
   pub kw_in: Span,
-  #[tree(child)]
+
   pub iterable: Box<Ast>,
-  #[tree(child)]
+
   pub body: Box<Ast>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct While {
   pub kw: Span,
-  #[tree(child)]
+
   pub condition: Box<Ast>,
-  #[tree(child)]
+
   pub body: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Loop {
   pub kw: Span,
   pub body: Box<Ast>,
@@ -369,18 +347,18 @@ pub struct Loop {
 pub struct Fn {
   pub kw_fn: Span,
   pub opener: Span,
-  #[tree(child)]
+
   pub params: Params,
   pub closer: Span,
-  #[tree(child)]
+
   pub return_ty: MaybeAst,
   pub kw_with: Option<Span>,
-  #[tree(child)]
+
   pub abilities: Abilities,
   pub kw_where: Option<Span>,
-  #[tree(child)]
+
   pub constraints: Constraints,
-  #[tree(child)]
+
   pub body: MaybeAst,
 }
 
@@ -389,25 +367,19 @@ pub struct Param {
   pub label: Option<Identifier>,
   pub name: Identifier,
   pub colon: Span,
-  #[tree(child)]
+
   pub ty: Box<Ast>,
   pub eq: Option<Span>,
-  #[tree(child)]
+
   pub default: MaybeAst,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct Params(#[tree(child)] pub Vec<(Param, Option<Span>)>);
-
-impl TreeDisplay for (Param, Option<Span>) {
-  fn tree(&self) -> TreeNode {
-    self.0.tree()
-  }
-}
+pub struct Params(pub Vec<(Param, Option<Span>)>);
 
 // ──── Pointer ───────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Ptr {
   pub op: Span,
   pub kind: PtrKind,
@@ -415,7 +387,7 @@ pub struct Ptr {
   pub ty: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub enum PtrKind {
   Const,
   Mut,
@@ -424,14 +396,14 @@ pub enum PtrKind {
 
 // ──── Span/Array ────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct SpanType {
   pub opener: Span,
   pub closer: Span,
   pub ty: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct ArrayType {
   pub opener: Span,
   pub size: Box<Ast>,
@@ -439,7 +411,7 @@ pub struct ArrayType {
   pub ty: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct DynArrayType {
   pub opener: Span,
   pub kw_dyn: Span,
@@ -449,7 +421,7 @@ pub struct DynArrayType {
 
 // ──── Map ───────────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct MapType {
   pub opener: Span,
   pub key: Box<Ast>,
@@ -460,17 +432,17 @@ pub struct MapType {
 
 // ──── Named tuple ─────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct NamedField {
   pub name: Span,
   pub colon: Span,
   pub ty: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct NamedFields(pub Vec<(NamedField, Option<Span>)>);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct NamedTuple {
   pub opener: Span,
   pub fields: NamedFields,
@@ -479,7 +451,7 @@ pub struct NamedTuple {
 
 // ──── Attribute ─────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Attribute {
   pub at: Span,
   pub opener: Span,
@@ -491,14 +463,14 @@ pub struct Attribute {
 // ──── Abilities / Constraints ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct Abilities(#[tree(child)] pub Vec<(Box<Ast>, Option<Span>)>);
+pub struct Abilities(pub Vec<(Box<Ast>, Option<Span>)>);
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct Constraints(#[tree(child)] pub Vec<(Box<Ast>, Option<Span>)>);
+pub struct Constraints(pub Vec<(Box<Ast>, Option<Span>)>);
 
 // ──── Record definition ──────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct RecordDef {
   pub kw: Span,
   pub opener: Span,
@@ -506,19 +478,19 @@ pub struct RecordDef {
   pub closer: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Field {
   pub name: Identifier,
   pub colon: Span,
   pub ty: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct Fields(pub Vec<(Field, Option<Span>)>);
 
 // ──── Enum definition ────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct EnumDef {
   pub kw: Span,
   pub base_ty: Box<Ast>,
@@ -527,19 +499,19 @@ pub struct EnumDef {
   pub closer: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct EnumCase {
   pub name: Identifier,
   pub eq: Span,
   pub value: Box<Ast>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct EnumCases(pub Vec<(EnumCase, Option<Span>)>);
 
 // ──── Variant definition ─────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct VariantDef {
   pub kw: Span,
   pub opener: Span,
@@ -547,18 +519,18 @@ pub struct VariantDef {
   pub closer: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct VariantCase {
   pub name: Identifier,
   pub ty: MaybeTypeAnnotation,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct VariantCases(pub Vec<(VariantCase, Option<Span>)>);
 
 // ──── Impl definition ────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct ImplDef {
   pub kw: Span,
   pub ttrait: MaybeAst,
@@ -571,7 +543,7 @@ pub struct ImplDef {
 
 // ──── Trait definition ───────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct TraitDef {
   pub kw: Span,
   pub kw_where: Option<Span>,
@@ -583,7 +555,7 @@ pub struct TraitDef {
 
 // ──── Ability definition ──────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct AbilityDef {
   pub kw: Span,
   pub opener: Span,
@@ -593,7 +565,7 @@ pub struct AbilityDef {
 
 // ──── Attribute value ─────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
 pub struct AttributeValue {
   pub kw: Span,
   pub opener: Span,
@@ -604,7 +576,7 @@ pub struct AttributeValue {
 // ──── MaybeAst ──────────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, TreeDisplay)]
-pub struct MaybeAst(#[tree(child)] pub Option<Box<Ast>>);
+pub struct MaybeAst(pub Option<Box<Ast>>);
 
 // ──── Constructors ──────────────────────────────────────────────────────────────────────────────
 

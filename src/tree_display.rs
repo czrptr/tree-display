@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 pub trait TreeDisplay {
-  fn tree(&self) -> TreeNode;
+  fn tree(&self) -> Tree;
 }
 
 pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
@@ -13,32 +13,28 @@ pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
   result
 }
 
-pub struct Field {
-  pub name: String,
-  pub value: String,
-}
-
-pub struct TreeNode {
+pub struct Tree {
   pub label: String,
-  pub fields: Vec<Field>,
-  pub children: Vec<TreeNode>,
+  pub subtrees: Vec<Tree>,
 }
 
-impl TreeNode {
-  pub fn new(label: impl Into<String>, fields: Vec<Field>, children: Vec<TreeNode>) -> TreeNode {
-    TreeNode {
+impl Tree {
+  pub fn new(label: impl Into<String>, subtrees: Vec<Tree>) -> Tree {
+    Tree {
       label: label.into(),
-      fields,
-      children,
+      subtrees,
     }
   }
 
-  pub fn leaf(label: impl Into<String>) -> TreeNode {
-    TreeNode {
+  pub fn leaf(label: impl Into<String>) -> Tree {
+    Tree {
       label: label.into(),
-      fields: Vec::new(),
-      children: Vec::new(),
+      subtrees: Vec::new(),
     }
+  }
+
+  pub fn is_leaf(&self) -> bool {
+    self.subtrees.is_empty()
   }
 }
 
@@ -67,38 +63,26 @@ impl<T: AsRef<str>> Styled for T {
 
 const LINE: &Style = &Style::new().fg_color(Some(Color::Ansi256(Ansi256Color(243))));
 
-impl Field {
-  fn write(&self, out: &mut String, prefix: &str, last: bool) {
-    out.push_str(prefix);
-    out.push_str(&(if last { "╰─ " } else { "├─ " }).styled(LINE));
-    out.push_str(&self.name);
-    out.push_str(&self.value);
-  }
-}
-
-impl TreeNode {
+impl Tree {
   fn write_root(&self, out: &mut String) {
     out.push_str(&self.label);
 
-    let total = self.fields.len() + self.children.len();
     let mut index = 0;
-
-    for field in &self.fields {
+    for child in &self.subtrees {
       index += 1;
       out.push('\n');
-      field.write(out, "", index == total);
-    }
-
-    for child in &self.children {
-      index += 1;
-      out.push('\n');
-      child.write(out, "", index == total);
+      child.write(out, "", index == self.subtrees.len());
     }
   }
 
   fn write(&self, out: &mut String, prefix: &str, last: bool) {
+    let connector = if self.is_leaf() { "─" } else { "╼" };
+    let line = if last { "╰" } else { "├" };
+    let connector = format!("{line}{connector} ");
+
     out.push_str(prefix);
-    out.push_str(&(if last { "╰╼ " } else { "├╼ " }).styled(LINE));
+    #[rustfmt::skip]
+    out.push_str(&connector.styled(LINE));
     out.push_str(&self.label);
 
     let next_prefix = format!(
@@ -107,57 +91,67 @@ impl TreeNode {
       (if last { "   " } else { "│  " }).styled(LINE)
     );
 
-    let total = self.fields.len() + self.children.len();
     let mut index = 0;
-
-    for field in &self.fields {
+    for child in &self.subtrees {
       index += 1;
       out.push('\n');
-      field.write(out, &next_prefix, index == total);
-    }
-
-    for child in &self.children {
-      index += 1;
-      out.push('\n');
-      child.write(out, &next_prefix, index == total);
+      child.write(out, &next_prefix, index == self.subtrees.len());
     }
   }
 }
 
+impl TreeDisplay for u32 {
+  fn tree(&self) -> Tree {
+    Tree::leaf(format!("{:?}", self))
+  }
+}
+
+// 1-element tuple
+impl<T0: TreeDisplay> TreeDisplay for (T0,) {
+  fn tree(&self) -> Tree {
+    let mut tree = Tree::leaf("tuple");
+    let child = self.0.tree();
+    tree.subtrees.push(child);
+    tree
+  }
+}
+
+// 2-element tuple
+impl<T0: TreeDisplay, T1: TreeDisplay> TreeDisplay for (T0, T1) {
+  fn tree(&self) -> Tree {
+    let mut tree = Tree::leaf("tuple");
+    tree.subtrees.push(self.0.tree());
+    tree.subtrees.push(self.1.tree());
+    tree
+  }
+}
+
 impl<T: TreeDisplay + ?Sized> TreeDisplay for Box<T> {
-  fn tree(&self) -> TreeNode {
+  fn tree(&self) -> Tree {
     (**self).tree()
   }
 }
 
 impl<T: TreeDisplay + ?Sized> TreeDisplay for &T {
-  fn tree(&self) -> TreeNode {
+  fn tree(&self) -> Tree {
     (**self).tree()
   }
 }
 
 impl<T: TreeDisplay> TreeDisplay for Option<T> {
-  fn tree(&self) -> TreeNode {
+  fn tree(&self) -> Tree {
     match self {
       Some(value) => value.tree(),
-      None => TreeNode {
-        label: "None".into(),
-        fields: Vec::new(),
-        children: Vec::new(),
-      },
+      None => Tree::leaf("None").into(),
     }
   }
 }
 
 impl<T: TreeDisplay> TreeDisplay for Vec<T> {
-  fn tree(&self) -> TreeNode {
-    TreeNode {
-      label: String::from("Vec"),
-      fields: vec![Field {
-        name: "len".into(),
-        value: self.len().to_string(),
-      }],
-      children: self
+  fn tree(&self) -> Tree {
+    Tree::new(
+      "Vec",
+      self
         .iter()
         .enumerate()
         .map(|(i, item)| {
@@ -166,18 +160,18 @@ impl<T: TreeDisplay> TreeDisplay for Vec<T> {
           node
         })
         .collect(),
-    }
+    )
   }
 }
 
 impl<T: TreeDisplay + ?Sized> TreeDisplay for Rc<T> {
-  fn tree(&self) -> TreeNode {
+  fn tree(&self) -> Tree {
     (**self).tree()
   }
 }
 
 impl<T: TreeDisplay + ?Sized> TreeDisplay for Arc<T> {
-  fn tree(&self) -> TreeNode {
+  fn tree(&self) -> Tree {
     (**self).tree()
   }
 }
