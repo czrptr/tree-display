@@ -44,6 +44,8 @@ impl Tree {
 
 trait Styled {
   fn styled(&self, style: &Style) -> String;
+  fn fg(&self, color: Option<Color>) -> String;
+  fn bg(&self, color: Option<Color>) -> String;
 }
 
 impl<T: AsRef<str>> Styled for T {
@@ -61,9 +63,27 @@ impl<T: AsRef<str>> Styled for T {
 
     out
   }
+
+  fn fg(&self, color: Option<Color>) -> String {
+    self.styled(&Style::new().fg_color(color))
+  }
+
+  fn bg(&self, color: Option<Color>) -> String {
+    self.styled(&Style::new().bg_color(color))
+  }
 }
 
-const LINE: &Style = &Style::new().fg_color(Some(Color::Ansi256(Ansi256Color(243))));
+fn split_at_colon(s: &str) -> (String, Option<String>) {
+  if let Some((base, content)) = s.split_once(':') {
+    (base.trim().to_string(), Some(content.trim().to_string()))
+  } else {
+    (s.trim().to_string(), None)
+  }
+}
+
+const LINE_COLOR: Option<Color> = Some(Color::Ansi256(Ansi256Color(243)));
+const BLACK: Option<Color> = Some(Color::Ansi256(Ansi256Color(0)));
+const LINE: &Style = &Style::new().fg_color(LINE_COLOR);
 
 impl Tree {
   fn write_root(&self, out: &mut String) {
@@ -85,7 +105,15 @@ impl Tree {
     out.push_str(prefix);
     #[rustfmt::skip]
     out.push_str(&connector.styled(LINE));
-    out.push_str(&self.label);
+
+    match split_at_colon(&self.label) {
+      (value, None) => out.push_str(&value),
+      (label, Some(value)) => {
+        out.push_str(&label.styled(LINE));
+        out.push_str(" ");
+        out.push_str(&value);
+      }
+    }
 
     let next_prefix = format!(
       "{}{}",
