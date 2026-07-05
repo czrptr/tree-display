@@ -1,5 +1,6 @@
 use darling::{Error, FromField};
 use proc_macro::TokenStream;
+use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident, Index, Member, Variant, parse_macro_input};
@@ -45,9 +46,18 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
   let type_ident = input.ident;
 
+  let ccrate = match crate_name("tree-display") {
+    Ok(FoundCrate::Itself) => quote!(crate),
+    Ok(FoundCrate::Name(name)) => {
+      let ident = Ident::new(&name, Span::call_site());
+      quote!(::#ident)
+    }
+    Err(_) => quote!(::tree_display),
+  };
+
   let body = match input.data {
-    Data::Struct(data) => derive_struct(&type_ident, data.fields),
-    Data::Enum(data) => derive_enum(data.variants.into_iter().collect()),
+    Data::Struct(data) => derive_struct(&ccrate, &type_ident, data.fields),
+    Data::Enum(data) => derive_enum(&ccrate, data.variants.into_iter().collect()),
     _ => {
       return Error::custom("TreeDisplay cannot be derived for unions")
         .write_errors()
@@ -56,8 +66,8 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   };
 
   quote! {
-    impl #impl_generics ::tree_display::TreeDisplay for #type_ident #type_generics #where_clause {
-      fn tree(&self) -> ::tree_display::Tree {
+    impl #impl_generics #ccrate::TreeDisplay for #type_ident #type_generics #where_clause {
+      fn tree(&self) -> #ccrate::Tree {
         #body
       }
     }
@@ -65,7 +75,7 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   .into()
 }
 
-fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
+fn derive_struct(ccrate: &TokenStream2, type_ident: &Ident, fields: Fields) -> TokenStream2 {
   let type_name = type_ident.to_string();
 
   let is_empty_type = matches!(&fields, Fields::Unit)
@@ -73,9 +83,7 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
     || matches!(&fields, Fields::Named(named) if named.named.is_empty());
 
   if is_empty_type {
-    return quote! {
-      ::tree_display::Tree::leaf(#type_name)
-    };
+    return quote!(#ccrate::Tree::leaf(#type_name));
   }
 
   let is_newtype = matches!(fields, Fields::Unnamed(_)) && fields.len() == 1;
@@ -83,9 +91,7 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   if is_newtype {
     let field = fields.iter().next().expect("there is exactly one element");
     let member = field_to_member(0, field);
-    return quote! {
-      self.#member.tree()
-    };
+    return quote!(self.#member.tree());
   }
 
   let fields = match fields {
@@ -100,7 +106,7 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
     .map(|(idx, field)| {
       let member = field_to_member(idx, field);
       let attrs = FieldAttributes::from_field(field)?;
-      Ok(process_field(quote! {self.#member}, member, attrs))
+      Ok(process_field(ccrate, quote!(self.#member), member, attrs))
     })
     .collect::<darling::Result<Vec<_>>>()
   {
@@ -109,13 +115,13 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   };
 
   quote! {
-    let mut subtrees = ::std::vec::Vec::<::tree_display::Tree>::new();
+    let mut subtrees = ::std::vec::Vec::<#ccrate::Tree>::new();
     #(#field_handlers)*
-    ::tree_display::Tree::new(#type_name, subtrees)
+    #ccrate::Tree::new(#type_name, subtrees)
   }
 }
 
-fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
+fn derive_enum(ccrate: &TokenStream2, variants: Vec<Variant>) -> TokenStream2 {
   let mut arms = Vec::new();
   for variant in variants {
     let variant_ident = variant.ident;
@@ -124,7 +130,7 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
     match variant.fields {
       Fields::Unit => {
         arms.push(quote! {
-            Self::#variant_ident => ::tree_display::Tree::leaf(#variant_name)
+          Self::#variant_ident => #ccrate::Tree::leaf(#variant_name)
         });
       }
 
@@ -143,7 +149,8 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
             let attrs = FieldAttributes::from_field(field)?;
             let ident = &bindings[idx];
             Ok(process_field(
-              quote! {#ident},
+              ccrate,
+              quote!(#ident),
               Member::Named(ident.clone()),
               attrs,
             ))
@@ -156,11 +163,11 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
 
         arms.push(quote! {
           Self::#variant_ident{ #( #bindings ),* } => {
-            let mut subtrees = ::std::vec::Vec::<::tree_display::Tree>::new();
+            let mut subtrees = ::std::vec::Vec::<#ccrate::Tree>::new();
 
             #(#handlers)*
 
-            ::tree_display::Tree::new(#variant_name, subtrees)
+            #ccrate::Tree::new(#variant_name, subtrees)
           }
         });
       }
@@ -171,9 +178,9 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
           // For newtype variants, forward directly without wrapping
           let ident = string_to_ident("__field0");
           arms.push(quote! {
-              Self::#variant_ident( #ident ) => {
-                #ident.tree()
-              }
+            Self::#variant_ident( #ident ) => {
+              #ident.tree()
+            }
           });
         }
 
@@ -189,6 +196,7 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
             let attrs = FieldAttributes::from_field(field)?;
             let ident = &bindings[idx];
             Ok(process_field(
+              ccrate,
               quote! {#ident},
               Member::Unnamed(Index::from(idx)),
               attrs,
@@ -202,11 +210,11 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
 
         arms.push(quote! {
           Self::#variant_ident( #( #bindings ),* ) => {
-            let mut subtrees = ::std::vec::Vec::<::tree_display::Tree>::new();
+            let mut subtrees = ::std::vec::Vec::<#ccrate::Tree>::new();
 
             #(#handlers)*
 
-            ::tree_display::Tree::new(#variant_name, subtrees)
+            #ccrate::Tree::new(#variant_name, subtrees)
           }
         });
       }
@@ -221,12 +229,13 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
 }
 
 fn process_field(
+  ccrate: &TokenStream2,
   access: TokenStream2,
   member: Member,
   attributes: FieldAttributes,
 ) -> TokenStream2 {
   if attributes.ignore {
-    return quote! {};
+    return quote!();
   }
 
   let member_string = match (attributes.unlabeled, attributes.label, &member) {
@@ -240,12 +249,12 @@ fn process_field(
     let node = #access.tree();
     if node.is_leaf() {
       // Leaf: render as a field (inline)
-      subtrees.push(::tree_display::Tree::leaf(
+      subtrees.push(#ccrate::Tree::leaf(
         ::std::format!("{}{}", #member_string, node.label)
       ));
     } else {
       // Node: render as a subtree with children
-      subtrees.push(::tree_display::Tree {
+      subtrees.push(#ccrate::Tree {
         label: ::std::format!("{}{}", #member_string, node.label),
         subtrees: node.subtrees,
       });
