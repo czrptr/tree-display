@@ -48,201 +48,37 @@ mod support {
     std::num::NonZeroIsize,
   );
 
-  // Empty tuple (unit)
-  impl TreeDisplay for () {
-    fn tree(&self) -> Tree {
-      Tree::leaf("()")
-    }
+  macro_rules! impl_tuple_tree_display {
+    ($($ty:ident $idx:tt),*) => {
+      impl<$($ty: TreeDisplay),*> TreeDisplay for ($($ty,)*) {
+        fn tree(&self) -> Tree {
+          #[allow(unused_mut)] // erroneous warning
+          let mut tree = Tree::leaf("tuple");
+          $(
+            let mut node = self.$idx.tree();
+            node.label = format!(".{}: {}", $idx, node.label);
+            tree.subtrees.push(node);
+          )*
+          tree
+        }
+      }
+    };
   }
 
-  // 1-element tuple
-  impl<T0: TreeDisplay> TreeDisplay for (T0,) {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree
-    }
-  }
-
-  // 2-element tuple
-  impl<T0: TreeDisplay, T1: TreeDisplay> TreeDisplay for (T0, T1) {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree
-    }
-  }
-
-  // 3-element tuple
-  impl<T0: TreeDisplay, T1: TreeDisplay, T2: TreeDisplay> TreeDisplay for (T0, T1, T2) {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree
-    }
-  }
-
-  // 4-element tuple
-  impl<T0: TreeDisplay, T1: TreeDisplay, T2: TreeDisplay, T3: TreeDisplay> TreeDisplay
-    for (T0, T1, T2, T3)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree
-    }
-  }
-
-  // 5-element tuple
-  impl<T0: TreeDisplay, T1: TreeDisplay, T2: TreeDisplay, T3: TreeDisplay, T4: TreeDisplay>
-    TreeDisplay for (T0, T1, T2, T3, T4)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree.subtrees.push(self.4.tree());
-      tree
-    }
-  }
-
-  // 6-element tuple
-  impl<
-    T0: TreeDisplay,
-    T1: TreeDisplay,
-    T2: TreeDisplay,
-    T3: TreeDisplay,
-    T4: TreeDisplay,
-    T5: TreeDisplay,
-  > TreeDisplay for (T0, T1, T2, T3, T4, T5)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree.subtrees.push(self.4.tree());
-      tree.subtrees.push(self.5.tree());
-      tree
-    }
-  }
-
-  // 7-element tuple
-  impl<
-    T0: TreeDisplay,
-    T1: TreeDisplay,
-    T2: TreeDisplay,
-    T3: TreeDisplay,
-    T4: TreeDisplay,
-    T5: TreeDisplay,
-    T6: TreeDisplay,
-  > TreeDisplay for (T0, T1, T2, T3, T4, T5, T6)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree.subtrees.push(self.4.tree());
-      tree.subtrees.push(self.5.tree());
-      tree.subtrees.push(self.6.tree());
-      tree
-    }
-  }
-
-  // 8-element tuple
-  impl<
-    T0: TreeDisplay,
-    T1: TreeDisplay,
-    T2: TreeDisplay,
-    T3: TreeDisplay,
-    T4: TreeDisplay,
-    T5: TreeDisplay,
-    T6: TreeDisplay,
-    T7: TreeDisplay,
-  > TreeDisplay for (T0, T1, T2, T3, T4, T5, T6, T7)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree.subtrees.push(self.4.tree());
-      tree.subtrees.push(self.5.tree());
-      tree.subtrees.push(self.6.tree());
-      tree.subtrees.push(self.7.tree());
-      tree
-    }
-  }
-
-  // 9-element tuple
-  impl<
-    T0: TreeDisplay,
-    T1: TreeDisplay,
-    T2: TreeDisplay,
-    T3: TreeDisplay,
-    T4: TreeDisplay,
-    T5: TreeDisplay,
-    T6: TreeDisplay,
-    T7: TreeDisplay,
-    T8: TreeDisplay,
-  > TreeDisplay for (T0, T1, T2, T3, T4, T5, T6, T7, T8)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree.subtrees.push(self.4.tree());
-      tree.subtrees.push(self.5.tree());
-      tree.subtrees.push(self.6.tree());
-      tree.subtrees.push(self.7.tree());
-      tree.subtrees.push(self.8.tree());
-      tree
-    }
-  }
-
-  // 10-element tuple
-  impl<
-    T0: TreeDisplay,
-    T1: TreeDisplay,
-    T2: TreeDisplay,
-    T3: TreeDisplay,
-    T4: TreeDisplay,
-    T5: TreeDisplay,
-    T6: TreeDisplay,
-    T7: TreeDisplay,
-    T8: TreeDisplay,
-    T9: TreeDisplay,
-  > TreeDisplay for (T0, T1, T2, T3, T4, T5, T6, T7, T8, T9)
-  {
-    fn tree(&self) -> Tree {
-      let mut tree = Tree::leaf("tuple");
-      tree.subtrees.push(self.0.tree());
-      tree.subtrees.push(self.1.tree());
-      tree.subtrees.push(self.2.tree());
-      tree.subtrees.push(self.3.tree());
-      tree.subtrees.push(self.4.tree());
-      tree.subtrees.push(self.5.tree());
-      tree.subtrees.push(self.6.tree());
-      tree.subtrees.push(self.7.tree());
-      tree.subtrees.push(self.8.tree());
-      tree.subtrees.push(self.9.tree());
-      tree
-    }
-  }
+  // Manual expansion for each tuple size
+  impl_tuple_tree_display!();
+  impl_tuple_tree_display!(T0 0);
+  impl_tuple_tree_display!(T0 0, T1 1);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10);
+  impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10, T11 11);
 
   impl<T: TreeDisplay, const N: usize> TreeDisplay for [T; N] {
     fn tree(&self) -> Tree {
