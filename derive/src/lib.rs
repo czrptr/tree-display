@@ -231,9 +231,9 @@ fn process_field(
 
   let member_string = match (attributes.unlabeled, attributes.label, &member) {
     (true, _, _) => "".into(),
-    (false, Some(label), _) => ::std::format!(" ({})", label),
-    (false, _, Member::Named(ident)) => ::std::format!(" ({})", ident.to_string()),
-    (false, _, Member::Unnamed(index)) => ::std::format!(" (.{})", index.index),
+    (false, Some(label), _) => ::std::format!("{}: ", label),
+    (false, _, Member::Named(ident)) => ::std::format!("{}: ", ident.to_string()),
+    (false, _, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
   };
 
   quote! {
@@ -241,12 +241,12 @@ fn process_field(
     if node.is_leaf() {
       // Leaf: render as a field (inline)
       subtrees.push(::tree_display::Tree::leaf(
-        ::std::format!("{}{}", node.label, #member_string)
+        ::std::format!("{}{}", #member_string, node.label)
       ));
     } else {
       // Node: render as a subtree with children
       subtrees.push(::tree_display::Tree {
-        label: ::std::format!("{}{}", node.label, #member_string),
+        label: ::std::format!("{}{}", #member_string, node.label),
         subtrees: node.subtrees,
       });
     }
