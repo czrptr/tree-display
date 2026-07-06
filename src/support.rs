@@ -172,7 +172,7 @@ mod support {
 
   impl<T: TreeDisplay> TreeDisplay for Vec<T> {
     fn tree(&self) -> Tree {
-      let children: Vec<Tree> = self
+      let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
         .map(|(i, item)| {
@@ -182,13 +182,15 @@ mod support {
         })
         .collect();
 
-      Tree::new(format!("Vec (len: {})", self.len()), children)
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
+
+      Tree::new("Vec", children)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for [T] {
     fn tree(&self) -> Tree {
-      let children: Vec<Tree> = self
+      let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
         .map(|(i, item)| {
@@ -198,7 +200,9 @@ mod support {
         })
         .collect();
 
-      Tree::new(format!("Slice (len: {})", self.len()), children)
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
+
+      Tree::new("Slice", children)
     }
   }
 
@@ -216,14 +220,15 @@ mod support {
 
       // Sort by key for deterministic output
       children.sort_by(|a, b| a.label.cmp(&b.label));
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
 
-      Tree::new(format!("HashMap (len: {})", self.len()), children)
+      Tree::new("HashMap", children)
     }
   }
 
   impl<K: TreeDisplay, V: TreeDisplay> TreeDisplay for std::collections::BTreeMap<K, V> {
     fn tree(&self) -> Tree {
-      let children: Vec<Tree> = self
+      let mut children: Vec<Tree> = self
         .iter()
         .map(|(key, value)| {
           let key_node = key.tree();
@@ -233,7 +238,9 @@ mod support {
         })
         .collect();
 
-      Tree::new(format!("BTreeMap (len: {})", self.len()), children)
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
+
+      Tree::new("BTreeMap", children)
     }
   }
 
@@ -242,22 +249,24 @@ mod support {
       let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
 
       children.sort_by(|a, b| a.label.cmp(&b.label));
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
 
-      Tree::new(format!("HashSet (len: {})", self.len()), children)
+      Tree::new("HashSet", children)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::BTreeSet<T> {
     fn tree(&self) -> Tree {
-      let children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
 
-      Tree::new(format!("BTreeSet (len: {})", self.len()), children)
+      Tree::new("BTreeSet", children)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::VecDeque<T> {
     fn tree(&self) -> Tree {
-      let children: Vec<Tree> = self
+      let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
         .map(|(i, item)| {
@@ -267,13 +276,15 @@ mod support {
         })
         .collect();
 
-      Tree::new(format!("VecDeque (len: {})", self.len()), children)
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
+
+      Tree::new("VecDeque", children)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::LinkedList<T> {
     fn tree(&self) -> Tree {
-      let children: Vec<Tree> = self
+      let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
         .map(|(i, item)| {
@@ -283,7 +294,9 @@ mod support {
         })
         .collect();
 
-      Tree::new(format!("LinkedList (len: {})", self.len()), children)
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
+
+      Tree::new("LinkedList", children)
     }
   }
 
@@ -292,8 +305,9 @@ mod support {
       let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
 
       children.sort_by(|a, b| b.label.cmp(&a.label)); // Max heap order
+      children.insert(0, Tree::leaf(format!("len: {}", self.len())));
 
-      Tree::new(format!("BinaryHeap (len: {})", self.len()), children)
+      Tree::new("BinaryHeap", children)
     }
   }
 
