@@ -182,6 +182,7 @@ fn derive_enum(ccrate: &TokenStream2, variants: Vec<Variant>) -> TokenStream2 {
               #ident.tree()
             }
           });
+          continue;
         }
 
         let bindings = (0..fields.unnamed.len())
