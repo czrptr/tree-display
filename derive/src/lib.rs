@@ -147,7 +147,11 @@ fn derive_enum(ccrate: &TokenStream2, variants: Vec<Variant>) -> TokenStream2 {
           .enumerate()
           .map(|(idx, field)| {
             let attrs = FieldAttributes::from_field(field)?;
-            let ident = &bindings[idx];
+            let ident = if attrs.ignore {
+              &string_to_ident("_")
+            } else {
+              &bindings[idx]
+            };
             Ok(process_field(
               ccrate,
               quote!(#ident),
