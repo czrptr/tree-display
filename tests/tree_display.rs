@@ -18,6 +18,8 @@ struct PersonWithAddress {
   name: String,
   #[tree(unlabeled)]
   age: u32,
+  #[tree(ignore)]
+  skill: u64,
   address: Address,
   #[tree(label = "children")]
   children: Vec<Person>,
@@ -41,6 +43,7 @@ fn test_nested_struct() {
   let person = PersonWithAddress {
     name: "Bob".to_string(),
     age: 25,
+    skill: 40,
     address: Address {
       city: "NYC".to_string(),
       zip: 10001,
@@ -62,6 +65,7 @@ fn test_nested_struct() {
   assert!(output.contains("Bob"));
   assert!(output.contains("address"));
   assert!(output.contains("children"));
+  assert!(!output.contains("skill"));
 }
 
 #[test]
