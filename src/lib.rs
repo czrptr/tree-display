@@ -79,13 +79,20 @@ fn split_at_colon(s: &str) -> (String, Option<String>) {
   }
 }
 
-const LINE_COLOR: Option<Color> = Some(Color::Ansi256(Ansi256Color(243)));
-const BLACK: Option<Color> = Some(Color::Ansi256(Ansi256Color(0)));
+const LINE_COLOR: Option<Color> = Some(Color::Ansi256(Ansi256Color(74)));
+const TYPE_COLOR: Option<Color> = Some(Color::Ansi256(Ansi256Color(79)));
+const FIELD_COLOR: Option<Color> = Some(Color::Ansi256(Ansi256Color(153)));
+const VALUE_COLOR: Option<Color> = Some(Color::Ansi256(Ansi256Color(187)));
 const LINE: &Style = &Style::new().fg_color(LINE_COLOR);
+const TYPE: &Style = &Style::new().fg_color(TYPE_COLOR);
+const FIELD: &Style = &Style::new().fg_color(FIELD_COLOR);
+const VALUE: &Style = &Style::new().fg_color(VALUE_COLOR);
+const NONE: &Style = &Style::new();
 
 impl Tree {
   fn write_root(&self, out: &mut String) {
-    out.push_str(&self.label);
+    let style = if self.is_leaf() { NONE } else { TYPE };
+    out.push_str(&self.label.styled(style));
 
     let mut index = 0;
     for child in &self.subtrees {
@@ -105,11 +112,13 @@ impl Tree {
     out.push_str(&connector.styled(LINE));
 
     match split_at_colon(&self.label) {
-      (value, None) => out.push_str(&value),
+      (value, None) => out.push_str(&value.styled(VALUE)),
       (label, Some(value)) => {
-        out.push_str(&label.styled(LINE));
+        out.push_str(&label.styled(FIELD));
         out.push_str(": ");
-        out.push_str(&value);
+
+        let style = if self.is_leaf() { VALUE } else { TYPE };
+        out.push_str(&value.styled(style));
       }
     }
 
