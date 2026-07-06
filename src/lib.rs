@@ -1,10 +1,14 @@
 pub use derive::TreeDisplay;
-mod support;
 
 #[cfg(feature = "color")]
-mod color;
+mod theme;
 #[cfg(feature = "color")]
-pub use color::*;
+pub use theme::*;
+
+mod display;
+pub use display::*;
+
+mod support;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 pub trait TreeDisplay {
@@ -39,40 +43,5 @@ impl Tree {
 
   pub fn is_leaf(&self) -> bool {
     self.subtrees.is_empty()
-  }
-}
-
-// ──── Impl ──────────────────────────────────────────────────────────────────────────────────────
-
-impl Tree {
-  fn write_root(&self, out: &mut String) {
-    out.push_str(&self.label);
-
-    let mut index = 0;
-    for child in &self.subtrees {
-      index += 1;
-      out.push('\n');
-      child.write(out, "", index == self.subtrees.len());
-    }
-  }
-
-  fn write(&self, out: &mut String, prefix: &str, last: bool) {
-    let connector = if self.is_leaf() { "─" } else { "╼" };
-    let line = if last { "╰" } else { "├" };
-    let connector = format!("{line}{connector} ");
-
-    out.push_str(prefix);
-    out.push_str(&connector);
-    out.push_str(&self.label);
-
-    let padding = if last { "   " } else { "│  " };
-    let next_prefix = format!("{prefix}{padding}");
-
-    let mut index = 0;
-    for child in &self.subtrees {
-      index += 1;
-      out.push('\n');
-      child.write(out, &next_prefix, index == self.subtrees.len());
-    }
   }
 }
