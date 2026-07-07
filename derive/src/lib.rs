@@ -106,7 +106,7 @@ fn derive_struct(ccrate: &TokenStream2, type_ident: &Ident, fields: Fields) -> T
     .map(|(idx, field)| {
       let member = field_to_member(idx, field);
       let attrs = FieldAttributes::from_field(field)?;
-      Ok(process_field(ccrate, quote!(self.#member), member, attrs))
+      Ok(process_field(quote!(self.#member), member, attrs))
     })
     .collect::<darling::Result<Vec<_>>>()
   {
@@ -153,7 +153,6 @@ fn derive_enum(ccrate: &TokenStream2, variants: Vec<Variant>) -> TokenStream2 {
               &bindings[idx]
             };
             Ok(process_field(
-              ccrate,
               quote!(#ident),
               Member::Named(ident.clone()),
               attrs,
@@ -201,7 +200,6 @@ fn derive_enum(ccrate: &TokenStream2, variants: Vec<Variant>) -> TokenStream2 {
             let attrs = FieldAttributes::from_field(field)?;
             let ident = &bindings[idx];
             Ok(process_field(
-              ccrate,
               quote! {#ident},
               Member::Unnamed(Index::from(idx)),
               attrs,
@@ -234,7 +232,6 @@ fn derive_enum(ccrate: &TokenStream2, variants: Vec<Variant>) -> TokenStream2 {
 }
 
 fn process_field(
-  ccrate: &TokenStream2,
   access: TokenStream2,
   member: Member,
   attributes: FieldAttributes,
@@ -243,26 +240,19 @@ fn process_field(
     return quote!();
   }
 
-  let member_string = match (attributes.unlabeled, attributes.label, &member) {
-    (true, _, _) => "".into(),
-    (false, Some(label), _) => ::std::format!("{}: ", label),
-    (false, _, Member::Named(ident)) => ::std::format!("{}: ", ident.to_string()),
-    (false, _, Member::Unnamed(index)) => ::std::format!(".{}: ", index.index),
+  let label = match (attributes.unlabeled, attributes.label, &member) {
+    (true, _, _) => None,
+    (false, Some(label), _) => Some(label),
+    (false, _, Member::Named(ident)) => Some(ident.to_string()),
+    (false, _, Member::Unnamed(index)) => Some(format!(".{}", index.index.to_string())),
+  };
+
+  let label = match label {
+    Some(l) => quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#l)) },
+    None => quote! { ::std::option::Option::None },
   };
 
   quote! {
-    let node = #access.tree();
-    if node.is_leaf() {
-      // Leaf: render as a field (inline)
-      subtrees.push(#ccrate::Tree::leaf(
-        ::std::format!("{}{}", #member_string, node.label)
-      ));
-    } else {
-      // Node: render as a subtree with children
-      subtrees.push(#ccrate::Tree {
-        label: ::std::format!("{}{}", #member_string, node.label),
-        subtrees: node.subtrees,
-      });
-    }
+    subtrees.push(#access.tree().labeled(#label));
   }
 }

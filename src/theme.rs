@@ -5,8 +5,8 @@ static THEME: OnceLock<Theme> = OnceLock::new();
 
 pub fn get_theme() -> &'static Theme {
   THEME.get().unwrap_or(&Theme {
-    colors: Colors::NONE,
-    lines: Lines::ASCII,
+    colors: Colors::VSCODE_DARK_PLUS,
+    lines: Lines::LIGHT_ROUNDED,
   })
 }
 

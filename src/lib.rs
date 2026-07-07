@@ -22,23 +22,31 @@ pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
 }
 
 pub struct Tree {
-  pub label: String,
+  pub label: Option<String>,
+  pub content: String,
   pub subtrees: Vec<Tree>,
 }
 
 impl Tree {
-  pub fn new(label: impl Into<String>, subtrees: Vec<Tree>) -> Tree {
+  pub fn new(content: impl ToString, subtrees: Vec<Tree>) -> Tree {
     Tree {
-      label: label.into(),
+      label: None,
+      content: content.to_string(),
       subtrees,
     }
   }
 
-  pub fn leaf(label: impl Into<String>) -> Tree {
+  pub fn leaf(content: impl ToString) -> Tree {
     Tree {
-      label: label.into(),
+      label: None,
+      content: content.to_string(),
       subtrees: Vec::new(),
     }
+  }
+
+  pub fn labeled(mut self, label: impl Into<Option<String>>) -> Self {
+    self.label = label.into();
+    self
   }
 
   pub fn is_leaf(&self) -> bool {

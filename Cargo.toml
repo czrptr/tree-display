@@ -11,6 +11,6 @@ anstyle = { version = "1.0", optional = true }
 chumsky = { version = "0.12", optional = true }
 
 [features]
-default = []
+default = ["color"]
 color = ["dep:anstyle"]
 chumsky = ["dep:chumsky"]
