@@ -384,7 +384,11 @@ mod chumsky_support {
 
   impl TreeDisplay for SimpleSpan {
     fn tree(&self) -> Tree {
-      Tree::leaf(format!("{}..{}", self.start, self.end))
+      let children = vec![
+        Tree::leaf(self.start).labeled(Member::new("start")),
+        Tree::leaf(self.end).labeled(Member::new("end")),
+      ];
+      Tree::new(TypeName::new("SimpleSpan"), children)
     }
   }
 }
