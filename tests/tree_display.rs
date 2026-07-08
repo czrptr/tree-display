@@ -1,23 +1,29 @@
 // tests/tree_display_test.rs
 use tree_display::{TreeDisplay, tree_format};
 
-#[derive(TreeDisplay)]
+#[derive(Debug, TreeDisplay)]
 struct Person {
   name: String,
   age: u32,
 }
 
-#[derive(TreeDisplay)]
+#[derive(Debug, TreeDisplay)]
 struct Address {
   city: String,
   zip: u32,
 }
 
-#[derive(TreeDisplay)]
+#[derive(Debug, TreeDisplay)]
+enum YesNo {
+  Yes,
+}
+
+#[derive(Debug, TreeDisplay)]
 struct PersonWithAddress {
   name: String,
   #[tree(unlabeled)]
-  age: u32,
+  age: YesNo,
+  #[allow(dead_code)]
   #[tree(ignore)]
   skill: u64,
   address: Address,
@@ -42,7 +48,7 @@ fn test_simple_struct() {
 fn test_nested_struct() {
   let person = PersonWithAddress {
     name: "Bob".to_string(),
-    age: 25,
+    age: YesNo::Yes,
     skill: 40,
     address: Address {
       city: "NYC".to_string(),
@@ -70,7 +76,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_tuple_struct() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct Point(u32, u32);
 
   let point = Point(10, 20);
@@ -81,7 +87,7 @@ fn test_tuple_struct() {
 
 #[test]
 fn test_unit_struct() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct Empty;
 
   let empty = Empty;
@@ -92,7 +98,7 @@ fn test_unit_struct() {
 
 #[test]
 fn test_enum() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   enum Status {
     Success,
     Error(u32),
@@ -112,7 +118,7 @@ fn test_enum() {
 
 #[test]
 fn test_newtype() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct Wrapped(u32);
 
   let wrapped = Wrapped(42);
@@ -123,7 +129,7 @@ fn test_newtype() {
 
 #[test]
 fn test_unlabeled() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct Unlabeled {
     #[tree(unlabeled)]
     name: String,
@@ -142,7 +148,7 @@ fn test_unlabeled() {
 
 #[test]
 fn test_option() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct WithOption {
     #[tree(label = "maybe")]
     value: Option<u32>,
@@ -157,7 +163,7 @@ fn test_option() {
 
 #[test]
 fn test_vec() {
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct WithVec {
     #[tree(label = "numbers")]
     values: Vec<u32>,
@@ -425,7 +431,7 @@ fn test_path() {
 fn test_phantom_data() {
   use std::marker::PhantomData;
 
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct WithPhantom<T> {
     value: u32,
     _marker: PhantomData<T>,
@@ -473,7 +479,7 @@ fn test_mixed_collections_in_tuple() {
 fn test_custom_struct_with_collections() {
   use std::collections::{HashMap, HashSet, VecDeque};
 
-  #[derive(TreeDisplay)]
+  #[derive(Debug, TreeDisplay)]
   struct MyCollections {
     numbers: VecDeque<u32>,
     words: HashSet<String>,

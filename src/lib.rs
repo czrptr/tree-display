@@ -1,4 +1,5 @@
 pub use derive::TreeDisplay;
+use std::any::Any;
 
 #[cfg(feature = "color")]
 mod theme;
@@ -6,6 +7,7 @@ mod theme;
 pub use theme::*;
 
 mod display;
+#[allow(unused_imports)]
 pub use display::*;
 
 mod support;
@@ -13,6 +15,10 @@ mod support;
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 pub trait TreeDisplay {
   fn tree(&self) -> Tree;
+}
+
+pub trait TreeContent: Any {
+  fn to_string(&self) -> String;
 }
 
 pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
@@ -23,23 +29,23 @@ pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
 
 pub struct Tree {
   pub label: Option<String>,
-  pub content: String,
+  pub content: Box<dyn TreeContent>,
   pub subtrees: Vec<Tree>,
 }
 
 impl Tree {
-  pub fn new(content: impl ToString, subtrees: Vec<Tree>) -> Tree {
+  pub fn new<T: TreeContent>(content: T, subtrees: Vec<Tree>) -> Tree {
     Tree {
       label: None,
-      content: content.to_string(),
+      content: Box::new(content),
       subtrees,
     }
   }
 
-  pub fn leaf(content: impl ToString) -> Tree {
+  pub fn leaf<T: TreeContent>(content: T) -> Tree {
     Tree {
       label: None,
-      content: content.to_string(),
+      content: Box::new(content),
       subtrees: Vec::new(),
     }
   }

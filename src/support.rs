@@ -8,7 +8,7 @@ mod support {
       $(
         impl TreeDisplay for $ty {
           fn tree(&self) -> Tree {
-            Tree::leaf(format!("{:?}", self))
+            Tree::leaf(self.clone())
           }
         }
       )*
@@ -19,7 +19,6 @@ mod support {
     bool,
     char,
     String,
-    &str,
     i8,
     i16,
     i32,
@@ -79,6 +78,12 @@ mod support {
   impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9);
   impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10);
   impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10, T11 11);
+
+  impl TreeDisplay for &str {
+    fn tree(&self) -> Tree {
+      Tree::leaf(self.to_string())
+    }
+  }
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for &T {
     fn tree(&self) -> Tree {
@@ -142,14 +147,12 @@ mod support {
       match self {
         Ok(value) => {
           let mut node = value.tree();
-          node.content = format!("Ok({})", node.content);
-          node.label = Some("Ok".to_string());
+          node.content = Box::new(format!("Ok({})", node.content.to_string()));
           node
         }
         Err(err) => {
           let mut node = err.tree();
-          node.content = format!("Err({})", node.content);
-          node.label = Some("Err".to_string());
+          node.content = Box::new(format!("Err({})", node.content.to_string()));
           node
         }
       }
@@ -161,13 +164,8 @@ mod support {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", i));
-          node
-        })
+        .map(|(i, item)| item.tree().labeled(format!("[{}]", i)))
         .collect();
-
       let len_node = Tree::leaf(N).labeled(Some("len".into()));
       children.insert(0, len_node);
       Tree::new("Array", children)
@@ -179,13 +177,8 @@ mod support {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", i));
-          node
-        })
+        .map(|(i, item)| item.tree().labeled(format!("[{}]", i)))
         .collect();
-
       let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
       children.insert(0, len_node);
       Tree::new("Slice", children)
@@ -197,88 +190,11 @@ mod support {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", i));
-          node
-        })
+        .map(|(i, item)| item.tree().labeled(format!("[{}]", i)))
         .collect();
-
       let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
       children.insert(0, len_node);
       Tree::new("Vec", children)
-    }
-  }
-
-  impl<K: TreeDisplay, V: TreeDisplay, S> TreeDisplay for std::collections::HashMap<K, V, S> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self
-        .iter()
-        .map(|(key, value)| {
-          let mut node = value.tree();
-          let key_content = format!("[{}]: {}", key.tree().content, node.content);
-          node.content = key_content;
-          node
-        })
-        .collect();
-
-      children.sort_by(|a, b| a.content.cmp(&b.content));
-      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
-      children.insert(0, len_node);
-      Tree::new("HashMap", children)
-    }
-  }
-
-  impl<K: TreeDisplay, V: TreeDisplay> TreeDisplay for std::collections::BTreeMap<K, V> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self
-        .iter()
-        .map(|(key, value)| {
-          let mut node = value.tree();
-          let key_content = format!("{}: {}", key.tree().content, node.content);
-          node.content = key_content;
-          node
-        })
-        .collect();
-
-      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
-      children.insert(0, len_node);
-      Tree::new("BTreeMap", children)
-    }
-  }
-
-  impl<T: TreeDisplay, S> TreeDisplay for std::collections::HashSet<T, S> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self
-        .iter()
-        .map(|item| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", node.content));
-          node
-        })
-        .collect();
-
-      children.sort_by(|a, b| a.content.cmp(&b.content));
-      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
-      children.insert(0, len_node);
-      Tree::new("HashSet", children)
-    }
-  }
-
-  impl<T: TreeDisplay> TreeDisplay for std::collections::BTreeSet<T> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self
-        .iter()
-        .map(|item| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", node.content));
-          node
-        })
-        .collect();
-
-      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
-      children.insert(0, len_node);
-      Tree::new("BTreeSet", children)
     }
   }
 
@@ -287,13 +203,8 @@ mod support {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", i));
-          node
-        })
+        .map(|(i, item)| item.tree().labeled(format!("[{}]", i)))
         .collect();
-
       let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
       children.insert(0, len_node);
       Tree::new("VecDeque", children)
@@ -305,31 +216,59 @@ mod support {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", i));
-          node
-        })
+        .map(|(i, item)| item.tree().labeled(format!("[{}]", i)))
         .collect();
-
       let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
       children.insert(0, len_node);
       Tree::new("LinkedList", children)
     }
   }
 
-  impl<T: TreeDisplay> TreeDisplay for std::collections::BinaryHeap<T> {
+  impl<K: std::fmt::Debug, V: TreeDisplay, S> TreeDisplay for std::collections::HashMap<K, V, S> {
     fn tree(&self) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
-        .map(|item| {
-          let mut node = item.tree();
-          node.label = Some(format!("[{}]", node.content));
-          node
-        })
+        .map(|(key, value)| value.tree().labeled(format!("[{:?}]", key)))
         .collect();
+      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
+      children.insert(0, len_node);
+      Tree::new("HashMap", children)
+    }
+  }
 
-      children.sort_by(|a, b| b.content.cmp(&a.content)); // Max heap order
+  impl<K: std::fmt::Debug, V: TreeDisplay> TreeDisplay for std::collections::BTreeMap<K, V> {
+    fn tree(&self) -> Tree {
+      let mut children: Vec<Tree> = self
+        .iter()
+        .map(|(key, value)| value.tree().labeled(format!("[{:?}]", key)))
+        .collect();
+      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
+      children.insert(0, len_node);
+      Tree::new("BTreeMap", children)
+    }
+  }
+
+  impl<T: TreeDisplay, S> TreeDisplay for std::collections::HashSet<T, S> {
+    fn tree(&self) -> Tree {
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
+      children.insert(0, len_node);
+      Tree::new("HashSet", children)
+    }
+  }
+
+  impl<T: TreeDisplay> TreeDisplay for std::collections::BTreeSet<T> {
+    fn tree(&self) -> Tree {
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+      let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
+      children.insert(0, len_node);
+      Tree::new("BTreeSet", children)
+    }
+  }
+
+  impl<T: TreeDisplay> TreeDisplay for std::collections::BinaryHeap<T> {
+    fn tree(&self) -> Tree {
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
       let len_node = Tree::leaf(self.len()).labeled(Some("len".into()));
       children.insert(0, len_node);
       Tree::new("BinaryHeap", children)
@@ -378,54 +317,48 @@ mod support {
     }
   }
 
-  impl<T: TreeDisplay + std::fmt::Debug> TreeDisplay for std::ops::Range<T> {
+  impl<T: TreeDisplay + std::fmt::Display + Clone + 'static> TreeDisplay for std::ops::Range<T> {
     fn tree(&self) -> Tree {
       let children = vec![
-        Tree::leaf(format!("start: {:?}", self.start)),
-        Tree::leaf(format!("end: {:?}", self.end)),
+        Tree::leaf(self.start.clone()).labeled(Some("start".into())),
+        Tree::leaf(self.end.clone()).labeled(Some("end".into())),
       ];
-      let mut tree = Tree::new("Range", children);
-      tree.label = Some("Range".to_string());
-      tree
+      Tree::new("Range", children)
     }
   }
 
-  impl<T: TreeDisplay + std::fmt::Debug> TreeDisplay for std::ops::RangeInclusive<T> {
+  impl<T: TreeDisplay + std::fmt::Display + Clone + 'static> TreeDisplay
+    for std::ops::RangeInclusive<T>
+  {
     fn tree(&self) -> Tree {
       let children = vec![
-        Tree::leaf(format!("start: {:?}", self.start())),
-        Tree::leaf(format!("end: {:?}", self.end())),
+        Tree::leaf(self.start().clone()).labeled(Some("start".into())),
+        Tree::leaf(self.end().clone()).labeled(Some("end".into())),
       ];
-      let mut tree = Tree::new("RangeInclusive", children);
-      tree.label = Some("RangeInclusive".to_string());
-      tree
+      Tree::new("RangeInclusive", children)
     }
   }
 
-  impl<T: TreeDisplay + std::fmt::Debug> TreeDisplay for std::ops::RangeFrom<T> {
+  impl<T: TreeDisplay + std::fmt::Display + Clone + 'static> TreeDisplay for std::ops::RangeFrom<T> {
     fn tree(&self) -> Tree {
-      let children = vec![Tree::leaf(format!("start: {:?}", self.start))];
-      let mut tree = Tree::new("RangeFrom", children);
-      tree.label = Some("RangeFrom".to_string());
-      tree
+      let children = vec![Tree::leaf(self.start.clone()).labeled(Some("start".into()))];
+      Tree::new("RangeFrom", children)
     }
   }
 
-  impl<T: TreeDisplay + std::fmt::Debug> TreeDisplay for std::ops::RangeTo<T> {
+  impl<T: TreeDisplay + std::fmt::Display + Clone + 'static> TreeDisplay for std::ops::RangeTo<T> {
     fn tree(&self) -> Tree {
-      let children = vec![Tree::leaf(format!("end: {:?}", self.end))];
-      let mut tree = Tree::new("RangeTo", children);
-      tree.label = Some("RangeTo".to_string());
-      tree
+      let children = vec![Tree::leaf(self.end.clone()).labeled(Some("end".into()))];
+      Tree::new("RangeTo", children)
     }
   }
 
-  impl<T: TreeDisplay + std::fmt::Debug> TreeDisplay for std::ops::RangeToInclusive<T> {
+  impl<T: TreeDisplay + std::fmt::Display + Clone + 'static> TreeDisplay
+    for std::ops::RangeToInclusive<T>
+  {
     fn tree(&self) -> Tree {
-      let children = vec![Tree::leaf(format!("end: {:?}", self.end))];
-      let mut tree = Tree::new("RangeToInclusive", children);
-      tree.label = Some("RangeToInclusive".to_string());
-      tree
+      let children = vec![Tree::leaf(self.end.clone()).labeled(Some("end".into()))];
+      Tree::new("RangeToInclusive", children)
     }
   }
 

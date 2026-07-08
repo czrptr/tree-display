@@ -1,9 +1,17 @@
-use super::Tree;
+use super::{Tree, TreeContent};
+use std::any::Any;
+
+#[cfg(not(feature = "color"))]
+impl<T: std::fmt::Display + Any> TreeContent for T {
+  fn to_string(&self) -> String {
+    format!("{}", self)
+  }
+}
 
 #[cfg(not(feature = "color"))]
 impl Tree {
   pub(crate) fn write_root(&self, out: &mut String) {
-    out.push_str(&self.content);
+    out.push_str(&format!("{}", self.content.to_string()));
 
     let mut index = 0;
     for child in &self.subtrees {
@@ -24,7 +32,7 @@ impl Tree {
       out.push_str(label);
       out.push_str(": ");
     }
-    out.push_str(&self.content);
+    out.push_str(&format!("{}", self.content.to_string()));
 
     let padding = if last { "   " } else { "│  " };
     let next_prefix = format!("{prefix}{padding}");
@@ -42,12 +50,19 @@ impl Tree {
 pub use super::theme::*;
 
 #[cfg(feature = "color")]
+impl<T: std::fmt::Display + Any> TreeContent for T {
+  fn to_string(&self) -> String {
+    format!("{}", self)
+  }
+}
+
+#[cfg(feature = "color")]
 impl Tree {
   pub(crate) fn write_root(&self, out: &mut String) {
     let content = if self.is_leaf() {
-      &self.content
+      &self.content.to_string()
     } else {
-      &self.content.fg(get_theme().colors.types)
+      &self.content.to_string().fg(get_theme().colors.types)
     };
     out.push_str(content);
 
@@ -70,7 +85,7 @@ impl Tree {
       out.push_str(&label.fg(theme.colors.fields));
       out.push_str(": ");
     }
-    out.push_str(&self.content.fg(theme.colors.values));
+    out.push_str(&self.content.to_string().fg(theme.colors.values));
 
     let padding = theme.lines.continuation_str(is_last);
     let next_prefix = format!("{}{}", prefix, padding.fg(theme.colors.lines));
