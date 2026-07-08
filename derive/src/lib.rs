@@ -68,7 +68,7 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   quote! {
     impl #impl_generics #ccrate::TreeDisplay for #type_ident #type_generics #where_clause {
       fn tree(&self) -> #ccrate::Tree {
-        use #ccrate::display::{Member, TypeName};
+        use #ccrate::format::{Member, TypeName};
         #body
       }
     }

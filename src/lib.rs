@@ -1,27 +1,17 @@
-pub use derive::TreeDisplay;
-use std::any::Any;
-
-#[cfg(feature = "color")]
-mod theme;
-#[cfg(feature = "color")]
-pub use theme::*;
-
-pub mod display;
+pub mod color;
+pub mod format;
+pub mod lines;
 pub mod support;
+pub mod theme;
+
+pub use derive::TreeDisplay;
+use format::Content;
+pub use format::Formatter;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
+
 pub trait TreeDisplay {
   fn tree(&self) -> Tree;
-}
-
-pub trait Content: Any {
-  fn to_string(&self) -> String;
-}
-
-pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
-  let mut result = String::new();
-  value.tree().write_root(&mut result);
-  result
 }
 
 pub struct Tree {
@@ -29,6 +19,8 @@ pub struct Tree {
   pub content: Box<dyn Content>,
   pub subtrees: Vec<Tree>,
 }
+
+// ──── Utility ───────────────────────────────────────────────────────────────────────────────────
 
 impl Tree {
   pub fn new(content: impl Content, subtrees: Vec<Tree>) -> Tree {

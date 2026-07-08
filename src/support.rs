@@ -1,6 +1,6 @@
 use crate::{
   Content, Tree, TreeDisplay,
-  display::{Index, Member, TypeName},
+  format::{Index, Member, TypeName},
 };
 
 mod support {
@@ -147,16 +147,8 @@ mod support {
   impl<T: TreeDisplay, E: TreeDisplay> TreeDisplay for Result<T, E> {
     fn tree(&self) -> Tree {
       match self {
-        Ok(value) => {
-          let mut node = value.tree();
-          node.content = Box::new(format!("Ok({})", node.content.to_string()));
-          node
-        }
-        Err(err) => {
-          let mut node = err.tree();
-          node.content = Box::new(format!("Err({})", node.content.to_string()));
-          node
-        }
+        Ok(value) => value.tree(),
+        Err(err) => err.tree(),
       }
     }
   }

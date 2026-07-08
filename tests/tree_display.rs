@@ -1,5 +1,5 @@
 // tests/tree_display_test.rs
-use tree_display::{TreeDisplay, tree_format};
+use tree_display::{Formatter, TreeDisplay, color::Colors, lines::Lines, theme::Theme};
 
 #[derive(Debug, TreeDisplay)]
 struct Person {
@@ -38,7 +38,13 @@ fn test_simple_struct() {
     age: 30,
   };
 
-  let output = tree_format(&person);
+  let output = Formatter::of(&person)
+    .with_theme(
+      &Theme::default()
+        .colors(Colors::VSCODE_DARK_PLUS)
+        .lines(Lines::LIGHT),
+    )
+    .format();
   println!("{}", output);
   assert!(output.contains("Person"));
   assert!(output.contains("Alice"));
@@ -66,7 +72,7 @@ fn test_nested_struct() {
     ],
   };
 
-  let output = tree_format(&person);
+  let output = Formatter::of(&person).format();
   println!("{}", output);
   assert!(output.contains("Bob"));
   assert!(output.contains("address"));
@@ -80,7 +86,7 @@ fn test_tuple_struct() {
   struct Point(u32, u32);
 
   let point = Point(10, 20);
-  let output = tree_format(&point);
+  let output = Formatter::of(&point).format();
   println!("{}", output);
   assert!(output.contains("Point"));
 }
@@ -91,7 +97,7 @@ fn test_unit_struct() {
   struct Empty;
 
   let empty = Empty;
-  let output = tree_format(&empty);
+  let output = Formatter::of(&empty).format();
   println!("{}", output);
   assert_eq!(output, "Empty");
 }
@@ -111,9 +117,15 @@ fn test_enum() {
     message: "Loading".to_string(),
   };
 
-  println!("Success:\n----\n{}\n----\n", tree_format(&success));
-  println!("Error:\n----\n{}\n----\n", tree_format(&error));
-  println!("Pending:\n----\n{}\n----\n", tree_format(&pending));
+  println!(
+    "Success:\n----\n{}\n----\n",
+    Formatter::of(&success).format()
+  );
+  println!("Error:\n----\n{}\n----\n", Formatter::of(&error).format());
+  println!(
+    "Pending:\n----\n{}\n----\n",
+    Formatter::of(&pending).format()
+  );
 }
 
 #[test]
@@ -122,7 +134,7 @@ fn test_newtype() {
   struct Wrapped(u32);
 
   let wrapped = Wrapped(42);
-  let output = tree_format(&wrapped);
+  let output = Formatter::of(&wrapped).format();
   // Should just show the inner value without wrapping
   assert!(output.contains("42"));
 }
@@ -141,7 +153,7 @@ fn test_unlabeled() {
     age: 30,
   };
 
-  let output = tree_format(&value);
+  let output = Formatter::of(&value).format();
   println!("{}", output);
   // The name field should be displayed without the "name:" prefix
 }
@@ -157,8 +169,8 @@ fn test_option() {
   let some = WithOption { value: Some(42) };
   let none = WithOption { value: None };
 
-  println!("Some:\n----\n{}\n----\n", tree_format(&some));
-  println!("None:\n----\n{}\n----\n", tree_format(&none));
+  println!("Some:\n----\n{}\n----\n", Formatter::of(&some).format());
+  println!("None:\n----\n{}\n----\n", Formatter::of(&none).format());
 }
 
 #[test]
@@ -173,7 +185,7 @@ fn test_vec() {
     values: vec![1, 2, 3, 4, 5],
   };
 
-  let output = tree_format(&data);
+  let output = Formatter::of(&data).format();
   println!("{}", output);
   assert!(output.contains("Vec"));
   assert!(output.contains("[0]"));
@@ -189,7 +201,7 @@ fn test_hashmap() {
   map.insert("Bob".to_string(), 25);
   map.insert("Charlie".to_string(), 35);
 
-  let output = tree_format(&map);
+  let output = Formatter::of(&map).format();
   println!("HashMap:\n----\n{}\n----\n", output);
 
   assert!(output.contains("HashMap"));
@@ -209,7 +221,7 @@ fn test_btreemap() {
   map.insert("cherry", 3);
   map.insert("date", 4);
 
-  let output = tree_format(&map);
+  let output = Formatter::of(&map).format();
   println!("BTreeMap:\n----\n{}\n----\n", output);
 
   assert!(output.contains("BTreeMap"));
@@ -230,7 +242,7 @@ fn test_hashset() {
   set.insert("python");
   set.insert("javascript");
 
-  let output = tree_format(&set);
+  let output = Formatter::of(&set).format();
   println!("HashSet:\n----\n{}\n----\n", output);
 
   assert!(output.contains("HashSet"));
@@ -255,7 +267,7 @@ fn test_btreeset() {
   set.insert(40);
   set.insert(50);
 
-  let output = tree_format(&set);
+  let output = Formatter::of(&set).format();
   println!("BTreeSet:\n----\n{}\n----\n", output);
 
   assert!(output.contains("BTreeSet"));
@@ -278,7 +290,7 @@ fn test_vecdeque() {
   deque.push_back(3);
   deque.push_front(0);
 
-  let output = tree_format(&deque);
+  let output = Formatter::of(&deque).format();
   println!("VecDeque:\n----\n{}\n----\n", output);
 
   assert!(output.contains("VecDeque"));
@@ -298,7 +310,7 @@ fn test_linkedlist() {
   list.push_back("second");
   list.push_back("third");
 
-  let output = tree_format(&list);
+  let output = Formatter::of(&list).format();
   println!("LinkedList:\n----\n{}\n----\n", output);
 
   assert!(output.contains("LinkedList"));
@@ -321,7 +333,7 @@ fn test_binaryheap() {
   heap.push(60);
   heap.push(10);
 
-  let output = tree_format(&heap);
+  let output = Formatter::of(&heap).format();
   println!("BinaryHeap:\n----\n{}\n----\n", output);
 
   assert!(output.contains("BinaryHeap"));
@@ -355,10 +367,10 @@ fn test_nested_collections() {
   set.insert(200);
   set_map.insert("second", set);
 
-  let output = tree_format(&outer_map);
+  let output = Formatter::of(&outer_map).format();
   println!("Nested HashMap:\n----\n{}\n----\n", output);
 
-  let output2 = tree_format(&set_map);
+  let output2 = Formatter::of(&set_map).format();
   println!("Nested HashSet in HashMap:\n----\n{}\n----\n", output2);
 
   assert!(output.contains("HashMap"));
@@ -370,33 +382,33 @@ fn test_nested_collections() {
 #[test]
 fn test_range_types() {
   let range = 1..5;
-  let output = tree_format(&range);
+  let output = Formatter::of(&range).format();
   println!("Range:\n----\n{}\n----\n", output);
   assert!(output.contains("Range"));
   assert!(output.contains("start: 1"));
   assert!(output.contains("end: 5"));
 
   let range_inclusive = 1..=5;
-  let output = tree_format(&range_inclusive);
+  let output = Formatter::of(&range_inclusive).format();
   println!("RangeInclusive:\n----\n{}\n----\n", output);
   assert!(output.contains("RangeInclusive"));
   assert!(output.contains("start: 1"));
   assert!(output.contains("end: 5"));
 
   let range_from = 1..;
-  let output = tree_format(&range_from);
+  let output = Formatter::of(&range_from).format();
   println!("RangeFrom:\n----\n{}\n----\n", output);
   assert!(output.contains("RangeFrom"));
   assert!(output.contains("start: 1"));
 
   let range_to = ..5;
-  let output = tree_format(&range_to);
+  let output = Formatter::of(&range_to).format();
   println!("RangeTo:\n----\n{}\n----\n", output);
   assert!(output.contains("RangeTo"));
   assert!(output.contains("end: 5"));
 
   let range_full = ..;
-  let output = tree_format(&range_full);
+  let output = Formatter::of(&range_full).format();
   println!("RangeFull:\n----\n{}\n----\n", output);
   assert_eq!(output, "RangeFull");
 }
@@ -406,12 +418,12 @@ fn test_duration() {
   use std::time::Duration;
 
   let duration = Duration::from_secs(123);
-  let output = tree_format(&duration);
+  let output = Formatter::of(&duration).format();
   println!("Duration:\n----\n{}\n----\n", output);
   assert!(output.contains("123s"));
 
   let duration_ms = Duration::from_millis(1500);
-  let output = tree_format(&duration_ms);
+  let output = Formatter::of(&duration_ms).format();
   println!("Duration (ms):\n----\n{}\n----\n", output);
   assert!(output.contains("1.5s"));
 }
@@ -421,7 +433,7 @@ fn test_path() {
   use std::path::PathBuf;
 
   let path = PathBuf::from("/home/user/file.txt");
-  let output = tree_format(&path);
+  let output = Formatter::of(&path).format();
   println!("Path:\n----\n{}\n----\n", output);
   // Just check it doesn't panic
   assert!(!output.is_empty());
@@ -442,7 +454,7 @@ fn test_phantom_data() {
     _marker: PhantomData,
   };
 
-  let output = tree_format(&data);
+  let output = Formatter::of(&data).format();
   println!("WithPhantom:\n----\n{}\n----\n", output);
   assert!(output.contains("42"));
 }
@@ -466,7 +478,7 @@ fn test_mixed_collections_in_tuple() {
 
   // Different collections in a tuple
   let mixed = (vec, set, map);
-  let output = tree_format(&mixed);
+  let output = Formatter::of(&mixed).format();
   println!("Mixed Collections:\n----\n{}\n----\n", output);
 
   assert!(output.contains("tuple"));
@@ -505,7 +517,7 @@ fn test_custom_struct_with_collections() {
     scores: map,
   };
 
-  let output = tree_format(&data);
+  let output = Formatter::of(&data).format();
   println!("Custom Collections Struct:\n----\n{}\n----\n", output);
 
   assert!(output.contains("MyCollections"));
