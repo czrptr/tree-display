@@ -151,14 +151,24 @@ mod color {
       let connector = theme.lines.connector_str(self.is_leaf(), is_last);
       out.push_str(&connector.fg(theme.colors.lines));
 
+      let mut offset = 0;
       if let Some(label) = &self.label {
-        out.push_str(&label.to_string());
+        let label_string = label.to_string();
+        if theme.align_to_values {
+          offset = label_string.stripped().len() + 2;
+        }
+        out.push_str(&label_string);
         out.push_str(": ");
       }
       out.push_str(&self.content.to_string());
 
       let padding = theme.lines.continuation_str(is_last);
-      let next_prefix = format!("{}{}", prefix, padding.fg(theme.colors.lines));
+      let next_prefix = format!(
+        "{}{}{}",
+        prefix,
+        padding.fg(theme.colors.lines),
+        " ".repeat(offset),
+      );
 
       let mut index = 0;
       for child in &self.subtrees {

@@ -7,6 +7,7 @@ pub fn get_theme() -> &'static Theme {
   THEME.get().unwrap_or(&Theme {
     colors: Colors::VSCODE_DARK_PLUS,
     lines: Lines::LIGHT_ROUNDED,
+    align_to_values: false,
   })
 }
 
@@ -20,6 +21,7 @@ pub fn set_theme(theme: Theme) -> Result<(), Theme> {
 pub struct Theme {
   pub colors: Colors,
   pub lines: Lines,
+  pub align_to_values: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,6 +47,7 @@ impl Theme {
     Self {
       colors: Colors::NONE,
       lines: Lines::ASCII,
+      align_to_values: false,
     }
   }
 
@@ -55,6 +58,11 @@ impl Theme {
 
   pub fn lines(mut self, lines: Lines) -> Self {
     self.lines = lines;
+    self
+  }
+
+  pub fn align_to_values(mut self, align_to_values: bool) -> Self {
+    self.align_to_values = align_to_values;
     self
   }
 }
@@ -242,6 +250,7 @@ const fn ansi256(color: u8) -> Color {
 pub(crate) trait Styled {
   fn styled(&self, style: &Style) -> String;
   fn fg(&self, color: Option<Color>) -> String;
+  fn stripped(&self) -> String;
 }
 
 impl<T: AsRef<str>> Styled for T {
@@ -258,5 +267,10 @@ impl<T: AsRef<str>> Styled for T {
 
   fn fg(&self, color: Option<Color>) -> String {
     self.styled(&Style::new().fg_color(color))
+  }
+
+  fn stripped(&self) -> String {
+    use anstream::adapter::strip_str;
+    strip_str(self.as_ref()).to_string()
   }
 }
