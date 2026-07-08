@@ -40,42 +40,42 @@ impl Colors {
 // ──── Utility ───────────────────────────────────────────────────────────────────────────────────
 
 impl Colors {
-  pub fn new() -> Self {
+  pub const fn new() -> Self {
     Self::NONE
   }
 
-  pub fn lines(mut self, color: impl Into<Option<Color>>) -> Self {
-    self.lines = color.into();
+  pub const fn lines(mut self, color: Color) -> Self {
+    self.lines = Some(color);
     self
   }
 
-  pub fn types(mut self, color: impl Into<Option<Color>>) -> Self {
-    self.types = color.into();
+  pub const fn types(mut self, color: Color) -> Self {
+    self.types = Some(color);
     self
   }
 
-  pub fn fields(mut self, color: impl Into<Option<Color>>) -> Self {
-    self.fields = color.into();
+  pub const fn fields(mut self, color: Color) -> Self {
+    self.fields = Some(color);
     self
   }
 
-  pub fn values(mut self, color: impl Into<Option<Color>>) -> Self {
-    self.values = color.into();
+  pub const fn values(mut self, color: Color) -> Self {
+    self.values = Some(color);
     self
   }
 
-  pub fn strings(mut self, color: impl Into<Option<Color>>) -> Self {
-    self.strings = color.into();
+  pub const fn strings(mut self, color: Color) -> Self {
+    self.strings = Some(color);
     self
   }
 
-  pub fn all(mut self, color: impl Into<Color>) -> Self {
-    let c = color.into();
-    self.lines = Some(c);
-    self.types = Some(c);
-    self.fields = Some(c);
-    self.fields = Some(c);
-    self.strings = Some(c);
+  pub const fn all(mut self, color: Color) -> Self {
+    let c = Some(color);
+    self.lines = c;
+    self.types = c;
+    self.fields = c;
+    self.fields = c;
+    self.strings = c;
     self
   }
 }

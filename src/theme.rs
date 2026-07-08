@@ -13,17 +13,25 @@ pub struct Theme {
 // ──── Utility ───────────────────────────────────────────────────────────────────────────────────
 
 impl Theme {
-  pub fn colors(mut self, colors: Colors) -> Self {
+  pub const fn default() -> Self {
+    Self {
+      colors: Colors::NONE,
+      lines: Lines::ASCII,
+      align_to_values: false,
+    }
+  }
+
+  pub const fn colors(mut self, colors: Colors) -> Self {
     self.colors = colors;
     self
   }
 
-  pub fn lines(mut self, lines: Lines) -> Self {
+  pub const fn lines(mut self, lines: Lines) -> Self {
     self.lines = lines;
     self
   }
 
-  pub fn align_to_values(mut self, align_to_values: bool) -> Self {
+  pub const fn align_to_values(mut self, align_to_values: bool) -> Self {
     self.align_to_values = align_to_values;
     self
   }
@@ -31,10 +39,6 @@ impl Theme {
 
 impl Default for Theme {
   fn default() -> Self {
-    Self {
-      colors: Colors::NONE,
-      lines: Lines::ASCII,
-      align_to_values: false,
-    }
+    Self::default()
   }
 }

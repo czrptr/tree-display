@@ -1,3 +1,5 @@
+// ──── API ───────────────────────────────────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Lines {
   pub vertical: char,
@@ -78,31 +80,31 @@ impl Lines {
 // ──── Utility ───────────────────────────────────────────────────────────────────────────────────
 
 impl Lines {
-  pub fn new() -> Self {
+  pub const fn new() -> Self {
     Self::ASCII
   }
 
-  pub fn vertical(mut self, c: char) -> Self {
+  pub const fn vertical(mut self, c: char) -> Self {
     self.vertical = c;
     self
   }
 
-  pub fn horizontal(mut self, c: char) -> Self {
+  pub const fn horizontal(mut self, c: char) -> Self {
     self.horizontal = c;
     self
   }
 
-  pub fn connector(mut self, c: char) -> Self {
+  pub const fn connector(mut self, c: char) -> Self {
     self.connector = c;
     self
   }
 
-  pub fn corner(mut self, c: char) -> Self {
+  pub const fn corner(mut self, c: char) -> Self {
     self.corner = c;
     self
   }
 
-  pub fn end(mut self, c: char) -> Self {
+  pub const fn end(mut self, c: char) -> Self {
     self.end = c;
     self
   }
