@@ -28,6 +28,7 @@ pub struct Colors {
   pub types: Option<Color>,
   pub fields: Option<Color>,
   pub values: Option<Color>,
+  pub strings: Option<Color>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -72,7 +73,7 @@ impl Lines {
   pub const LIGHT: Self = Self {
     vertical: '│',
     horizontal: '─',
-    connector: '╼',
+    connector: '─',
     corner: '├',
     end: '└',
   };
@@ -80,7 +81,7 @@ impl Lines {
   pub const LIGHT_DOTTED: Self = Self {
     vertical: '╎',
     horizontal: '╌',
-    connector: '╼',
+    connector: '─',
     corner: '├',
     end: '└',
   };
@@ -88,7 +89,7 @@ impl Lines {
   pub const LIGHT_ROUNDED: Self = Self {
     vertical: '│',
     horizontal: '─',
-    connector: '╼',
+    connector: '─',
     corner: '├',
     end: '╰',
   };
@@ -96,7 +97,7 @@ impl Lines {
   pub const LIGHT_DOTTED_ROUNDED: Self = Self {
     vertical: '╎',
     horizontal: '╌',
-    connector: '╼',
+    connector: '─',
     corner: '├',
     end: '╰',
   };
@@ -179,6 +180,7 @@ impl Colors {
     types: None,
     fields: None,
     values: None,
+    strings: None,
   };
 
   pub const VSCODE_DARK_PLUS: Self = Self {
@@ -186,6 +188,7 @@ impl Colors {
     types: Some(ansi256(79)),
     fields: Some(ansi256(153)),
     values: Some(ansi256(187)),
+    strings: Some(ansi256(173)),
   };
 
   pub fn new() -> Self {
@@ -212,12 +215,18 @@ impl Colors {
     self
   }
 
+  pub fn strings(mut self, color: impl Into<Option<Color>>) -> Self {
+    self.strings = color.into();
+    self
+  }
+
   pub fn all(mut self, color: impl Into<Color>) -> Self {
     let c = color.into();
     self.lines = Some(c);
     self.types = Some(c);
     self.fields = Some(c);
-    self.values = Some(c);
+    self.fields = Some(c);
+    self.strings = Some(c);
     self
   }
 }

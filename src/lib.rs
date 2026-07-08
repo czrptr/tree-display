@@ -6,18 +6,15 @@ mod theme;
 #[cfg(feature = "color")]
 pub use theme::*;
 
-mod display;
-#[allow(unused_imports)]
-pub use display::*;
-
-mod support;
+pub mod display;
+pub mod support;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 pub trait TreeDisplay {
   fn tree(&self) -> Tree;
 }
 
-pub trait TreeContent: Any {
+pub trait Content: Any {
   fn to_string(&self) -> String;
 }
 
@@ -28,13 +25,13 @@ pub fn tree_format<T: TreeDisplay>(value: &T) -> String {
 }
 
 pub struct Tree {
-  pub label: Option<String>,
-  pub content: Box<dyn TreeContent>,
+  pub label: Option<Box<dyn Content>>,
+  pub content: Box<dyn Content>,
   pub subtrees: Vec<Tree>,
 }
 
 impl Tree {
-  pub fn new<T: TreeContent>(content: T, subtrees: Vec<Tree>) -> Tree {
+  pub fn new(content: impl Content, subtrees: Vec<Tree>) -> Tree {
     Tree {
       label: None,
       content: Box::new(content),
@@ -42,7 +39,7 @@ impl Tree {
     }
   }
 
-  pub fn leaf<T: TreeContent>(content: T) -> Tree {
+  pub fn leaf(content: impl Content) -> Tree {
     Tree {
       label: None,
       content: Box::new(content),
@@ -50,8 +47,8 @@ impl Tree {
     }
   }
 
-  pub fn labeled(mut self, label: impl Into<Option<String>>) -> Self {
-    self.label = label.into();
+  pub fn labeled(mut self, label: impl Content) -> Self {
+    self.label = Some(Box::new(label));
     self
   }
 
