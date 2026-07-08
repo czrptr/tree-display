@@ -478,7 +478,13 @@ fn test_mixed_collections_in_tuple() {
 
   // Different collections in a tuple
   let mixed = (vec, set, map);
-  let output = Formatter::of(&mixed).format();
+  let output = Formatter::of(&mixed)
+    .with_theme(
+      &Theme::default()
+        .colors(Colors::VSCODE_DARK_PLUS)
+        .lines(Lines::LIGHT),
+    )
+    .format();
   println!("Mixed Collections:\n----\n{}\n----\n", output);
 
   assert!(output.contains("tuple"));

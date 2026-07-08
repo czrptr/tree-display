@@ -108,22 +108,4 @@ impl Lines {
     self.end = c;
     self
   }
-
-  pub(crate) fn connector_str(&self, is_leaf: bool, is_last: bool) -> String {
-    let connector_char = if is_leaf {
-      self.horizontal
-    } else {
-      self.connector
-    };
-    let corner_char = if is_last { self.end } else { self.corner };
-    format!("{}{} ", corner_char, connector_char)
-  }
-
-  pub(crate) fn continuation_str(&self, is_last: bool) -> String {
-    if is_last {
-      "   ".to_string()
-    } else {
-      format!("{}  ", self.vertical)
-    }
-  }
 }

@@ -102,8 +102,8 @@ impl Tree {
 
   fn write(&self, out: &mut String, prefix: &str, is_last: bool, theme: &Theme) {
     out.push_str(prefix);
-    let connector = theme.lines.connector_str(self.is_leaf(), is_last);
-    out.push_str(&connector.fg(theme.colors.lines));
+    let connector = theme.connector_str(self.is_leaf(), is_last);
+    out.push_str(&connector);
 
     let mut offset = 0;
     if let Some(label) = &self.label {
@@ -116,13 +116,9 @@ impl Tree {
     }
     out.push_str(&self.content.to_string(theme));
 
-    let padding = theme.lines.continuation_str(is_last);
-    let next_prefix = format!(
-      "{}{}{}",
-      prefix,
-      padding.fg(theme.colors.lines),
-      " ".repeat(offset),
-    );
+    let padding = theme.continuation_str(is_last);
+    // TODO: use darker line color and dots for this case
+    let next_prefix = format!("{}{}{}", prefix, padding, " ".repeat(offset),);
 
     let mut index = 0;
     for child in &self.subtrees {

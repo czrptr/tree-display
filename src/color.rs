@@ -10,30 +10,33 @@ pub type Style = ();
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Colors {
-  pub lines: Option<Color>,
   pub types: Option<Color>,
   pub fields: Option<Color>,
   pub values: Option<Color>,
   pub strings: Option<Color>,
+  pub lines: Option<Color>,
+  pub vline: Option<Color>,
 }
 
 // ──── Predefined themes ─────────────────────────────────────────────────────────────────────────
 
 impl Colors {
   pub const NONE: Self = Self {
-    lines: None,
     types: None,
     fields: None,
     values: None,
     strings: None,
+    lines: None,
+    vline: None,
   };
 
   pub const VSCODE_DARK_PLUS: Self = Self {
-    lines: Some(ansi256(32)),
     types: Some(ansi256(79)),
     fields: Some(ansi256(153)),
     values: Some(ansi256(187)),
     strings: Some(ansi256(173)),
+    lines: Some(ansi256(32)),
+    vline: Some(ansi256(24)),
   };
 }
 
@@ -42,11 +45,6 @@ impl Colors {
 impl Colors {
   pub const fn new() -> Self {
     Self::NONE
-  }
-
-  pub const fn lines(mut self, color: Color) -> Self {
-    self.lines = Some(color);
-    self
   }
 
   pub const fn types(mut self, color: Color) -> Self {
@@ -66,6 +64,16 @@ impl Colors {
 
   pub const fn strings(mut self, color: Color) -> Self {
     self.strings = Some(color);
+    self
+  }
+
+  pub const fn lines(mut self, color: Color) -> Self {
+    self.lines = Some(color);
+    self
+  }
+
+  pub const fn vline(mut self, color: Color) -> Self {
+    self.vline = Some(color);
     self
   }
 

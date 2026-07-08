@@ -42,3 +42,29 @@ impl Default for Theme {
     Self::default()
   }
 }
+
+// ──── Impl ──────────────────────────────────────────────────────────────────────────────────────
+
+impl Theme {
+  pub(crate) fn connector_str(&self, is_leaf: bool, is_last: bool) -> String {
+    let connector = if is_leaf {
+      self.lines.horizontal
+    } else {
+      self.lines.connector
+    };
+    let corner = if is_last {
+      self.lines.end
+    } else {
+      self.lines.corner
+    };
+    format!("{}{} ", corner, connector).fg(self.colors.lines)
+  }
+
+  pub(crate) fn continuation_str(&self, is_last: bool) -> String {
+    if is_last {
+      "   ".to_string()
+    } else {
+      format!("{}  ", self.lines.vertical).fg(self.colors.vline)
+    }
+  }
+}
