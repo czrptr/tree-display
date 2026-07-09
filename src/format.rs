@@ -17,10 +17,11 @@ use std::any::Any;
 ///
 /// ## Example
 /// ```no_run
-/// use tree_display::Formatter;
+/// use tree_display::{Formatter, theme::Theme};
 ///
-/// let output = Formatter::of(&my_value)
-///     .with_theme(&Theme::default())
+/// let value = 0;
+/// let output = Formatter::of(&value)
+///     .theme(Theme::default())
 ///     .format();
 /// ```
 pub struct Formatter<'value, 'context, T: TreeDisplay> {

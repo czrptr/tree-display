@@ -12,22 +12,6 @@
 //! - `#[tree(ignore)]` - Exclude the field from the tree
 //! - `#[tree(label = "...")]` - Override the field's display label
 //! - `#[tree(unlabeled)]` - Display the field without a label
-//!
-//! # Example
-//! ```
-//! use tree_display::TreeDisplay;
-//!
-//! #[derive(TreeDisplay)]
-//! struct Person {
-//!     name: String,
-//!     #[tree(map)]
-//!     age: u32,
-//!     #[tree(ignore)]
-//!     id: u64,
-//!     #[tree(label = "full_name")]
-//!     name: String,
-//! }
-//! ```
 
 use darling::{Error, FromField};
 use proc_macro::TokenStream;
@@ -103,8 +87,19 @@ fn derive(tokens: TokenStream) -> TokenStream {
   let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
   let type_ident = input.ident;
 
+  // `proc-macro-crate` looks at CARGO_MANIFEST_DIR to find the calling
+  // crate's Cargo.toml. During a doctest, that still points at
+  // tree-display's own manifest (whose package name is "tree-display"),
+  // so `crate_name` incorrectly reports `FoundCrate::Itself` even though
+  // the doctest is compiled as a separate binary that depends on
+  // `tree_display` as an *external* crate. Detect that case via the env
+  // var rustdoc sets while compiling doctests, and fall back to the
+  // external path in that situation.
+  let is_doctest = std::env::var_os("UNSTABLE_RUSTDOC_TEST_PATH").is_some();
+
   let ccrate = match crate_name("tree-display") {
-    Ok(FoundCrate::Itself) => quote!(crate),
+    Ok(FoundCrate::Itself) if !is_doctest => quote!(crate),
+    Ok(FoundCrate::Itself) => quote!(::tree_display),
     Ok(FoundCrate::Name(name)) => {
       let ident = Ident::new(&name, Span::call_site());
       quote!(::#ident)

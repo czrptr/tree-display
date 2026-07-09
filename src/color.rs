@@ -18,14 +18,13 @@ pub use inner::Color;
 /// ```no_run
 /// use tree_display::color::Colors;
 ///
-/// // Use the VS Code Dark+ theme
-/// let colors = Colors::VSCODE_DARK_PLUS;
+/// let dark = Colors::VSCODE_DARK_PLUS;
+/// let light = Colors::VSCODE_LIGHT_PLUS;
 ///
 /// // Customize individual colors
 /// let custom = Colors::new()
-///     .types(Colors::ansi256(79))
-///     .keywords(Colors::ansi256(74))
-///     .strings(Colors::ansi256(173));
+///     .types(dark.types)
+///     .strings(light.strings);
 /// ```
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -54,93 +53,93 @@ impl Colors {
 
   /// Visual Studio Code Dark+ theme.
   pub const VSCODE_DARK_PLUS: Self = Self::new()
-    .branches(inner::ansi256(32))
-    .vertical(inner::ansi256(24))
-    .keywords(inner::ansi256(74))
-    .members(inner::ansi256(153))
-    .strings(inner::ansi256(173))
-    .values(inner::ansi256(187))
-    .types(inner::ansi256(79));
+    .branches(Some(inner::ansi256(32)))
+    .vertical(Some(inner::ansi256(24)))
+    .keywords(Some(inner::ansi256(74)))
+    .members(Some(inner::ansi256(153)))
+    .strings(Some(inner::ansi256(173)))
+    .values(Some(inner::ansi256(187)))
+    .types(Some(inner::ansi256(79)));
 
   /// Visual Studio Code Light+ theme.
   pub const VSCODE_LIGHT_PLUS: Self = Self::new()
-    .branches(inner::ansi256(28))
-    .vertical(inner::ansi256(23))
-    .keywords(inner::ansi256(133))
-    .members(inner::ansi256(25))
-    .strings(inner::ansi256(88))
-    .values(inner::ansi256(94))
-    .types(inner::ansi256(26));
+    .branches(Some(inner::ansi256(28)))
+    .vertical(Some(inner::ansi256(23)))
+    .keywords(Some(inner::ansi256(133)))
+    .members(Some(inner::ansi256(25)))
+    .strings(Some(inner::ansi256(88)))
+    .values(Some(inner::ansi256(94)))
+    .types(Some(inner::ansi256(26)));
 
   /// Solarized Dark theme.
   pub const SOLARIZED_DARK: Self = Self::new()
-    .branches(inner::ansi256(101))
-    .vertical(inner::ansi256(60))
-    .keywords(inner::ansi256(33))
-    .members(inner::ansi256(112))
-    .strings(inner::ansi256(106))
-    .values(inner::ansi256(179))
-    .types(inner::ansi256(68));
+    .branches(Some(inner::ansi256(101)))
+    .vertical(Some(inner::ansi256(60)))
+    .keywords(Some(inner::ansi256(33)))
+    .members(Some(inner::ansi256(112)))
+    .strings(Some(inner::ansi256(106)))
+    .values(Some(inner::ansi256(179)))
+    .types(Some(inner::ansi256(68)));
 
   /// Solarized Light theme.
   pub const SOLARIZED_LIGHT: Self = Self::new()
-    .branches(inner::ansi256(101))
-    .vertical(inner::ansi256(60))
-    .keywords(inner::ansi256(33))
-    .members(inner::ansi256(112))
-    .strings(inner::ansi256(106))
-    .values(inner::ansi256(179))
-    .types(inner::ansi256(68));
+    .branches(Some(inner::ansi256(101)))
+    .vertical(Some(inner::ansi256(60)))
+    .keywords(Some(inner::ansi256(33)))
+    .members(Some(inner::ansi256(112)))
+    .strings(Some(inner::ansi256(106)))
+    .values(Some(inner::ansi256(179)))
+    .types(Some(inner::ansi256(68)));
 
   /// Dracula theme.
   pub const DRACULA: Self = Self::new()
-    .branches(inner::ansi256(102))
-    .vertical(inner::ansi256(59))
-    .keywords(inner::ansi256(141))
-    .members(inner::ansi256(147))
-    .strings(inner::ansi256(114))
-    .values(inner::ansi256(186))
-    .types(inner::ansi256(147));
+    .branches(Some(inner::ansi256(102)))
+    .vertical(Some(inner::ansi256(59)))
+    .keywords(Some(inner::ansi256(141)))
+    .members(Some(inner::ansi256(147)))
+    .strings(Some(inner::ansi256(114)))
+    .values(Some(inner::ansi256(186)))
+    .types(Some(inner::ansi256(147)));
 
   /// Monokai theme.
   pub const MONOKAI: Self = Self::new()
-    .branches(inner::ansi256(144))
-    .vertical(inner::ansi256(59))
-    .keywords(inner::ansi256(204))
-    .members(inner::ansi256(147))
-    .strings(inner::ansi256(113))
-    .values(inner::ansi256(186))
-    .types(inner::ansi256(147));
+    .branches(Some(inner::ansi256(144)))
+    .vertical(Some(inner::ansi256(59)))
+    .keywords(Some(inner::ansi256(204)))
+    .members(Some(inner::ansi256(147)))
+    .strings(Some(inner::ansi256(113)))
+    .values(Some(inner::ansi256(186)))
+    .types(Some(inner::ansi256(147)));
 
   /// Nord theme.
   pub const NORD: Self = Self::new()
-    .branches(inner::ansi256(109))
-    .vertical(inner::ansi256(66))
-    .keywords(inner::ansi256(117))
-    .members(inner::ansi256(148))
-    .strings(inner::ansi256(150))
-    .values(inner::ansi256(179))
-    .types(inner::ansi256(148));
+    .branches(Some(inner::ansi256(109)))
+    .vertical(Some(inner::ansi256(66)))
+    .keywords(Some(inner::ansi256(117)))
+    .members(Some(inner::ansi256(148)))
+    .strings(Some(inner::ansi256(150)))
+    .values(Some(inner::ansi256(179)))
+    .types(Some(inner::ansi256(148)));
 
   /// GitHub Dark theme.
   pub const GITHUB_DARK: Self = Self::new()
-    .branches(inner::ansi256(102))
-    .vertical(inner::ansi256(59))
-    .keywords(inner::ansi256(204))
-    .members(inner::ansi256(117))
-    .strings(inner::ansi256(142))
-    .values(inner::ansi256(186))
-    .types(inner::ansi256(117));
+    .branches(Some(inner::ansi256(102)))
+    .vertical(Some(inner::ansi256(59)))
+    .keywords(Some(inner::ansi256(204)))
+    .members(Some(inner::ansi256(117)))
+    .strings(Some(inner::ansi256(142)))
+    .values(Some(inner::ansi256(186)))
+    .types(Some(inner::ansi256(117)));
 
   /// GitHub Light theme.
   pub const GITHUB_LIGHT: Self = Self::new()
-    .branches(inner::ansi256(102))
-    .vertical(inner::ansi256(59))
-    .keywords(inner::ansi256(204))
-    .members(inner::ansi256(26))
-    .strings(inner::ansi256(142))
-    .values(inner::ansi256(186))
-    .types(inner::ansi256(26));
+    .branches(Some(inner::ansi256(102)))
+    .vertical(Some(inner::ansi256(59)))
+    .keywords(Some(inner::ansi256(204)))
+    .members(Some(inner::ansi256(26)))
+    .strings(Some(inner::ansi256(142)))
+    .values(Some(inner::ansi256(186)))
+    .types(Some(inner::ansi256(26)));
 }
 
 // ──── Utility ───────────────────────────────────────────────────────────────────────────────────
@@ -163,8 +162,10 @@ impl Colors {
   ///
   /// Branch lines are the horizontal connectors that extend from vertical lines
   /// to node labels. They form the "arms" of the tree structure.
-  pub const fn branches(mut self, color: Color) -> Self {
-    self.branches = Some(color);
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn branches(mut self, color: Option<Color>) -> Self {
+    self.branches = color;
     self
   }
 
@@ -172,16 +173,20 @@ impl Colors {
   ///
   /// Vertical lines connect parent nodes to their children, forming the main
   /// backbone of the tree hierarchy.
-  pub const fn vertical(mut self, color: Color) -> Self {
-    self.vertical = Some(color);
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn vertical(mut self, color: Option<Color>) -> Self {
+    self.vertical = color;
     self
   }
 
   /// Sets the color for language keywords.
   ///
-  /// Keywords are refer to keyword-like values such as enum variant names.
-  pub const fn keywords(mut self, color: Color) -> Self {
-    self.keywords = Some(color);
+  /// Keywords refer to keyword-like values such as enum variant names.
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn keywords(mut self, color: Option<Color>) -> Self {
+    self.keywords = color;
     self
   }
 
@@ -189,16 +194,20 @@ impl Colors {
   ///
   /// Member names are the fields of structs and variants of enums. They are
   /// typically displayed alongside their containing type.
-  pub const fn members(mut self, color: Color) -> Self {
-    self.members = Some(color);
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn members(mut self, color: Option<Color>) -> Self {
+    self.members = color;
     self
   }
 
   /// Sets the color for string literals.
   ///
   /// String literals are quoted text values, such as `"hello"` or multi-line string blocks.
-  pub const fn strings(mut self, color: Color) -> Self {
-    self.strings = Some(color);
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn strings(mut self, color: Option<Color>) -> Self {
+    self.strings = color;
     self
   }
 
@@ -206,8 +215,10 @@ impl Colors {
   ///
   /// Literal values include numbers (`42`, `3.14`), booleans (`true`, `false`),
   /// characters (`'a'`), and other primitive constant values.
-  pub const fn values(mut self, color: Color) -> Self {
-    self.values = Some(color);
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn values(mut self, color: Option<Color>) -> Self {
+    self.values = color;
     self
   }
 
@@ -215,8 +226,10 @@ impl Colors {
   ///
   /// Type names are identifiers that refer to types, such as [`String`], [`Vec`],
   /// [`Option`], [`i32`], and user-defined structs and enums.
-  pub const fn types(mut self, color: Color) -> Self {
-    self.types = Some(color);
+  ///
+  /// Pass `None` to disable coloring for this element.
+  pub const fn types(mut self, color: Option<Color>) -> Self {
+    self.types = color;
     self
   }
 
@@ -224,15 +237,16 @@ impl Colors {
   ///
   /// This is a convenience method for quickly creating a uniform theme
   /// where all elements share the same color.
-  pub const fn all(mut self, color: Color) -> Self {
-    let c = Some(color);
-    self.branches = c;
-    self.vertical = c;
-    self.keywords = c;
-    self.members = c;
-    self.strings = c;
-    self.values = c;
-    self.types = c;
+  ///
+  /// Pass `None` to disable all coloring.
+  pub const fn all(mut self, color: Option<Color>) -> Self {
+    self.branches = color;
+    self.vertical = color;
+    self.keywords = color;
+    self.members = color;
+    self.strings = color;
+    self.values = color;
+    self.types = color;
     self
   }
 }

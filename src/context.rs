@@ -23,7 +23,7 @@ pub type Mapper = dyn Fn(&dyn Content) -> Box<dyn Content>;
 ///
 /// ## Example
 /// ```no_run
-/// use tree_display::Context;
+/// use tree_display::context::Context;
 ///
 /// let context = Context::new()
 ///     .map(|s: &String| format!("'{}'", s))

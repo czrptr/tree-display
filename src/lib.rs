@@ -5,7 +5,7 @@
 //! Features include syntax highlighting, custom value mapping, and full theming support.
 //!
 //! ## Quick Start
-//! ```
+//! ```no_run
 //! use tree_display::{TreeDisplay, Formatter};
 //!
 //! #[derive(Debug, TreeDisplay)]
