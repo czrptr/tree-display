@@ -18,13 +18,8 @@ keywords = [
   "tree",
   "debug",
   "formatting",
-  "diagnostics",
-  "macro",
-  "macros",
   "derive",
-  "procedural-macro",
   "pretty-print",
-  "syntax-highlighting",
 ]
 
 version = "1.0.0"
