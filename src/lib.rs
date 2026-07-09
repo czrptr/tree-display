@@ -1,17 +1,20 @@
 pub mod color;
+pub mod context;
 pub mod format;
 pub mod lines;
 pub mod support;
 pub mod theme;
 
-pub use derive::TreeDisplay;
+use context::Context;
 use format::Content;
+
+pub use derive::TreeDisplay;
 pub use format::Formatter;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 
 pub trait TreeDisplay {
-  fn tree(&self) -> Tree;
+  fn tree(&self, context: &Context) -> Tree;
 }
 
 pub struct Tree {

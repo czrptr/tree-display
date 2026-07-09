@@ -1,6 +1,7 @@
 use crate::{
-  Content, Tree, TreeDisplay,
-  format::{Index, Member, TypeName},
+  Tree, TreeDisplay,
+  context::Context,
+  format::{Content, Index, Member, TypeName},
 };
 
 mod support {
@@ -10,7 +11,7 @@ mod support {
     ($($ty:ty),* $(,)?) => {
       $(
         impl TreeDisplay for $ty {
-          fn tree(&self) -> Tree {
+          fn tree(&self, _: &Context) -> Tree {
             Tree::leaf(self.clone())
           }
         }
@@ -53,11 +54,12 @@ mod support {
   macro_rules! impl_tuple_tree_display {
     ($($ty:ident $idx:tt),*) => {
       impl<$($ty: TreeDisplay),*> TreeDisplay for ($($ty,)*) {
-        fn tree(&self) -> Tree {
+        #[allow(unused_variables)] // erroneous warning
+        fn tree(&self, context: &Context) -> Tree {
           #[allow(unused_mut)] // erroneous warning
           let mut tree = Tree::leaf(TypeName::new("tuple"));
           $(
-            let node = self.$idx.tree().labeled(Member(format!(".{}", $idx)));
+            let node = self.$idx.tree(context).labeled(Member(format!(".{}", $idx)));
             tree.subtrees.push(node);
           )*
           tree
@@ -82,83 +84,83 @@ mod support {
   impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10, T11 11);
 
   impl TreeDisplay for &str {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(ToString::to_string(&self))
     }
   }
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for &T {
-    fn tree(&self) -> Tree {
-      (**self).tree()
+    fn tree(&self, context: &Context) -> Tree {
+      (**self).tree(context)
     }
   }
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for &mut T {
-    fn tree(&self) -> Tree {
-      (**self).tree()
+    fn tree(&self, context: &Context) -> Tree {
+      (**self).tree(context)
     }
   }
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for Box<T> {
-    fn tree(&self) -> Tree {
-      (**self).tree()
+    fn tree(&self, context: &Context) -> Tree {
+      (**self).tree(context)
     }
   }
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for std::rc::Rc<T> {
-    fn tree(&self) -> Tree {
-      (**self).tree()
+    fn tree(&self, context: &Context) -> Tree {
+      (**self).tree(context)
     }
   }
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for std::sync::Arc<T> {
-    fn tree(&self) -> Tree {
-      (**self).tree()
+    fn tree(&self, context: &Context) -> Tree {
+      (**self).tree(context)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::cell::RefCell<T> {
-    fn tree(&self) -> Tree {
-      self.borrow().tree()
+    fn tree(&self, context: &Context) -> Tree {
+      self.borrow().tree(context)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::sync::Mutex<T> {
-    fn tree(&self) -> Tree {
-      self.lock().unwrap().tree()
+    fn tree(&self, context: &Context) -> Tree {
+      self.lock().unwrap().tree(context)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::sync::RwLock<T> {
-    fn tree(&self) -> Tree {
-      self.read().unwrap().tree()
+    fn tree(&self, context: &Context) -> Tree {
+      self.read().unwrap().tree(context)
     }
   }
 
   impl<T: TreeDisplay> TreeDisplay for Option<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       match self {
-        Some(value) => value.tree(),
+        Some(value) => value.tree(context),
         None => Tree::leaf("None"),
       }
     }
   }
 
   impl<T: TreeDisplay, E: TreeDisplay> TreeDisplay for Result<T, E> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       match self {
-        Ok(value) => value.tree(),
-        Err(err) => err.tree(),
+        Ok(value) => value.tree(context),
+        Err(err) => err.tree(context),
       }
     }
   }
 
   impl<T: TreeDisplay, const N: usize> TreeDisplay for [T; N] {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| item.tree().labeled(Index::new(i)))
+        .map(|(i, item)| item.tree(context).labeled(Index::new(i)))
         .collect();
       let len_node = Tree::leaf(N).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -167,11 +169,11 @@ mod support {
   }
 
   impl<T: TreeDisplay> TreeDisplay for [T] {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| item.tree().labeled(Index::new(i)))
+        .map(|(i, item)| item.tree(context).labeled(Index::new(i)))
         .collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -180,11 +182,11 @@ mod support {
   }
 
   impl<T: TreeDisplay> TreeDisplay for Vec<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| item.tree().labeled(Index::new(i)))
+        .map(|(i, item)| item.tree(context).labeled(Index::new(i)))
         .collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -193,11 +195,11 @@ mod support {
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::VecDeque<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| item.tree().labeled(Index::new(i)))
+        .map(|(i, item)| item.tree(context).labeled(Index::new(i)))
         .collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -206,11 +208,11 @@ mod support {
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::LinkedList<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
         .enumerate()
-        .map(|(i, item)| item.tree().labeled(Index::new(i)))
+        .map(|(i, item)| item.tree(context).labeled(Index::new(i)))
         .collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -219,10 +221,10 @@ mod support {
   }
 
   impl<K: Clone + Content, V: TreeDisplay, S> TreeDisplay for std::collections::HashMap<K, V, S> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
-        .map(|(key, value)| value.tree().labeled(Index::new(key.clone())))
+        .map(|(key, value)| value.tree(context).labeled(Index::new(key.clone())))
         .collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -231,10 +233,10 @@ mod support {
   }
 
   impl<K: Clone + Content, V: TreeDisplay> TreeDisplay for std::collections::BTreeMap<K, V> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, context: &Context) -> Tree {
       let mut children: Vec<Tree> = self
         .iter()
-        .map(|(key, value)| value.tree().labeled(Index::new(key.clone())))
+        .map(|(key, value)| value.tree(context).labeled(Index::new(key.clone())))
         .collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
@@ -243,8 +245,8 @@ mod support {
   }
 
   impl<T: TreeDisplay, S> TreeDisplay for std::collections::HashSet<T, S> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+    fn tree(&self, context: &Context) -> Tree {
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree(context)).collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
       Tree::new(TypeName::new("HashSet"), children)
@@ -252,8 +254,8 @@ mod support {
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::BTreeSet<T> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+    fn tree(&self, context: &Context) -> Tree {
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree(context)).collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
       Tree::new(TypeName::new("BTreeSet"), children)
@@ -261,8 +263,8 @@ mod support {
   }
 
   impl<T: TreeDisplay> TreeDisplay for std::collections::BinaryHeap<T> {
-    fn tree(&self) -> Tree {
-      let mut children: Vec<Tree> = self.iter().map(|item| item.tree()).collect();
+    fn tree(&self, context: &Context) -> Tree {
+      let mut children: Vec<Tree> = self.iter().map(|item| item.tree(context)).collect();
       let len_node = Tree::leaf(self.len()).labeled(Member::new("len"));
       children.insert(0, len_node);
       Tree::new(TypeName::new("BinaryHeap"), children)
@@ -270,49 +272,49 @@ mod support {
   }
 
   impl TreeDisplay for std::path::Path {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
     }
   }
 
   impl TreeDisplay for std::path::PathBuf {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
     }
   }
 
   impl TreeDisplay for std::ffi::OsString {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
     }
   }
 
   impl TreeDisplay for std::ffi::OsStr {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
     }
   }
 
   impl TreeDisplay for std::time::Duration {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{}s", self.as_secs_f64()))
     }
   }
 
   impl TreeDisplay for std::time::Instant {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
     }
   }
 
   impl TreeDisplay for std::time::SystemTime {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
     }
   }
 
   impl<T: TreeDisplay + std::fmt::Debug + Clone + 'static> TreeDisplay for std::ops::Range<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       let children = vec![
         Tree::leaf(self.start.clone()).labeled(Member::new("start")),
         Tree::leaf(self.end.clone()).labeled(Member::new("end")),
@@ -324,7 +326,7 @@ mod support {
   impl<T: TreeDisplay + std::fmt::Debug + Clone + 'static> TreeDisplay
     for std::ops::RangeInclusive<T>
   {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       let children = vec![
         Tree::leaf(self.start().clone()).labeled(Member::new("start")),
         Tree::leaf(self.end().clone()).labeled(Member::new("end")),
@@ -334,14 +336,14 @@ mod support {
   }
 
   impl<T: TreeDisplay + std::fmt::Debug + Clone + 'static> TreeDisplay for std::ops::RangeFrom<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       let children = vec![Tree::leaf(self.start.clone()).labeled(Member::new("start"))];
       Tree::new(TypeName::new("RangeFrom"), children)
     }
   }
 
   impl<T: TreeDisplay + std::fmt::Debug + Clone + 'static> TreeDisplay for std::ops::RangeTo<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       let children = vec![Tree::leaf(self.end.clone()).labeled(Member::new("end"))];
       Tree::new(TypeName::new("RangeTo"), children)
     }
@@ -350,20 +352,20 @@ mod support {
   impl<T: TreeDisplay + std::fmt::Debug + Clone + 'static> TreeDisplay
     for std::ops::RangeToInclusive<T>
   {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       let children = vec![Tree::leaf(self.end.clone()).labeled(Member::new("end"))];
       Tree::new(TypeName::new("RangeToInclusive"), children)
     }
   }
 
   impl TreeDisplay for std::ops::RangeFull {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(TypeName::new("RangeFull"))
     }
   }
 
   impl<T> TreeDisplay for std::marker::PhantomData<T> {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(TypeName::new("PhantomData"))
     }
   }
@@ -375,7 +377,7 @@ mod chumsky_support {
   use chumsky::span::SimpleSpan;
 
   impl TreeDisplay for SimpleSpan {
-    fn tree(&self) -> Tree {
+    fn tree(&self, _: &Context) -> Tree {
       let children = vec![
         Tree::leaf(self.start).labeled(Member::new("start")),
         Tree::leaf(self.end).labeled(Member::new("end")),

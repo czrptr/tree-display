@@ -19,6 +19,7 @@ fn string_to_ident(name: impl AsRef<str>) -> Ident {
 #[derive(Debug, Default, FromField)]
 #[darling(attributes(tree), default, and_then = Self::validate)]
 struct FieldAttributes {
+  map: bool,
   ignore: bool,
   unlabeled: bool,
   label: Option<String>,
@@ -31,7 +32,7 @@ impl FieldAttributes {
         "`unlabeled` and `label` cannot be used together",
       ));
     }
-    if self.ignore && (self.unlabeled || self.label.is_some()) {
+    if self.ignore && (self.map || self.unlabeled || self.label.is_some()) {
       return Err(darling::Error::custom(
         "`ignore` cannot be combined with any other attribute",
       ));
@@ -67,8 +68,15 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
 
   quote! {
     impl #impl_generics #ccrate::TreeDisplay for #type_ident #type_generics #where_clause {
-      fn tree(&self) -> #ccrate::Tree {
+      fn tree(&self, context: &#ccrate::context::Context) -> #ccrate::Tree {
         use #ccrate::{format::{Member, TypeName}, Tree};
+        use ::std::any::TypeId;
+
+        #[allow(dead_code)] // might not be used if no fields are mapped
+        const fn type_of<T: ?Sized + 'static>(_: &T) -> TypeId {
+          TypeId::of::<T>()
+        }
+
         #body
       }
     }
@@ -92,7 +100,7 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   if is_newtype {
     let field = fields.iter().next().expect("there is exactly one element");
     let member = field_to_member(0, field);
-    return quote!(self.#member.tree());
+    return quote!(self.#member.tree(context));
   }
 
   let fields = match fields {
@@ -183,7 +191,7 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
           let ident = string_to_ident("__field0");
           arms.push(quote! {
             Self::#variant_ident( #ident ) => {
-              #ident.tree()
+              #ident.tree(context)
             }
           });
           continue;
@@ -253,7 +261,20 @@ fn process_field(
     None => quote! {},
   };
 
+  if attributes.map {
+    return quote! {
+      if let Some(mapper) = context.mappers.get(&type_of(&#access)) {
+        let mapped = mapper(&#access);
+        subtrees.push(Tree::leaf(mapped)#labeled);
+      }
+      else
+      {
+        subtrees.push(#access.tree(context)#labeled);
+      }
+    };
+  }
+
   quote! {
-    subtrees.push(#access.tree()#labeled);
+    subtrees.push(#access.tree(context)#labeled);
   }
 }

@@ -1,5 +1,7 @@
 // tests/tree_display_test.rs
-use tree_display::{Formatter, TreeDisplay, color::Colors, lines::Lines, theme::Theme};
+use tree_display::{
+  Formatter, TreeDisplay, color::Colors, context::Context, lines::Lines, theme::Theme,
+};
 
 #[derive(Debug, TreeDisplay)]
 struct Person {
@@ -20,6 +22,7 @@ enum YesNo {
 
 #[derive(Debug, TreeDisplay)]
 struct PersonWithAddress {
+  #[tree(map)]
   name: String,
   #[tree(unlabeled)]
   age: YesNo,
@@ -72,7 +75,11 @@ fn test_nested_struct() {
     ],
   };
 
-  let output = Formatter::of(&person).format();
+  let pad = String::from(" ! ");
+  let context =
+    Context::new().map(move |string: &String| format!("{}{}", string.repeat(2), pad).len());
+
+  let output = Formatter::of(&person).with_context(&context).format();
   println!("{}", output);
   assert!(output.contains("Bob"));
   assert!(output.contains("address"));

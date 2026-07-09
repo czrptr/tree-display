@@ -1,11 +1,12 @@
-use super::{Tree, TreeDisplay, color::Colored, theme::Theme};
+use super::{Tree, TreeDisplay, color::Colored, context::Context, theme::Theme};
 use std::any::Any;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 
-pub struct Formatter<'value, T: TreeDisplay> {
+pub struct Formatter<'value, 'context, T: TreeDisplay> {
   value: &'value T,
   theme: Option<Theme>,
+  context: Option<&'context Context>,
 }
 
 pub trait Content: Any {
@@ -14,9 +15,13 @@ pub trait Content: Any {
 
 // ──── Utility ───────────────────────────────────────────────────────────────────────────────────
 
-impl<'value, T: TreeDisplay> Formatter<'value, T> {
+impl<'value, 'context, T: TreeDisplay> Formatter<'value, 'context, T> {
   pub fn of(value: &'value T) -> Self {
-    Self { value, theme: None }
+    Self {
+      value,
+      theme: None,
+      context: None,
+    }
   }
 
   pub fn with_theme(&mut self, theme: &Theme) -> &mut Self {
@@ -24,10 +29,17 @@ impl<'value, T: TreeDisplay> Formatter<'value, T> {
     self
   }
 
+  pub fn with_context(&mut self, context: &'context Context) -> &mut Self {
+    self.context = Some(context);
+    self
+  }
+
   pub fn format(&self) -> String {
     let mut result = String::new();
     let theme = self.theme.unwrap_or(Theme::default());
-    self.value.tree().write_root(&mut result, &theme);
+    let empty_context = Context::new();
+    let context = self.context.unwrap_or(&empty_context);
+    self.value.tree(&context).write_root(&mut result, &theme);
     result
   }
 }
@@ -73,6 +85,12 @@ impl Content for Member {
 impl Content for Index {
   fn to_string(&self, theme: &Theme) -> String {
     format!("[{}]", self.0.to_string(theme))
+  }
+}
+
+impl Content for Box<dyn Content> {
+  fn to_string(&self, theme: &Theme) -> String {
+    (**self).to_string(theme)
   }
 }
 
