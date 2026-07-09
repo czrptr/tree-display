@@ -1,6 +1,6 @@
 // tests/tree_display_test.rs
 use tree_display::{
-  Formatter, TreeDisplay, color::Colors, context::Context, lines::Lines, theme::Theme,
+  color::Colors, context::Context, graphics::Graphics, theme::Theme, Formatter, TreeDisplay,
 };
 
 #[derive(Debug, TreeDisplay)]
@@ -42,10 +42,10 @@ fn test_simple_struct() {
   };
 
   let output = Formatter::of(&person)
-    .with_theme(
-      &Theme::default()
+    .theme(
+      Theme::default()
         .colors(Colors::VSCODE_DARK_PLUS)
-        .lines(Lines::LIGHT),
+        .lines(Graphics::LIGHT),
     )
     .format();
   println!("{}", output);
@@ -79,7 +79,7 @@ fn test_nested_struct() {
   let context =
     Context::new().map(move |string: &String| format!("{}{}", string.repeat(2), pad).len());
 
-  let output = Formatter::of(&person).with_context(&context).format();
+  let output = Formatter::of(&person).context(&context).format();
   println!("{}", output);
   assert!(output.contains("Bob"));
   assert!(output.contains("address"));
@@ -486,10 +486,10 @@ fn test_mixed_collections_in_tuple() {
   // Different collections in a tuple
   let mixed = (vec, set, map);
   let output = Formatter::of(&mixed)
-    .with_theme(
-      &Theme::default()
+    .theme(
+      Theme::default()
         .colors(Colors::VSCODE_DARK_PLUS)
-        .lines(Lines::LIGHT),
+        .lines(Graphics::LIGHT),
     )
     .format();
   println!("Mixed Collections:\n----\n{}\n----\n", output);

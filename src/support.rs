@@ -1,12 +1,25 @@
+//! Implementations of `TreeDisplay` for common Rust types.
+//!
+//! This module provides `TreeDisplay` implementations for:
+//! - Primitive types (bool, char, integers, floats, etc.)
+//! - Standard library collections (Vec, HashMap, HashSet, etc.)
+//! - Smart pointers (Box, Rc, Arc, RefCell, etc.)
+//! - Common types (Option, Result, tuples, ranges, etc.)
+//! - Path and time types
+//!
+//! ## Feature Flags
+//! - `chumsky`: Enables support for `chumsky::span::SimpleSpan`
+
 use crate::{
-  Tree, TreeDisplay,
   context::Context,
   format::{Content, Index, Keyword, Member, TypeName},
+  Tree, TreeDisplay,
 };
 
 mod support {
   use super::*;
 
+  /// Implements `TreeDisplay` for primitive types by rendering them as leaf nodes.
   macro_rules! impl_tree_display_for_primitive {
     ($($ty:ty),* $(,)?) => {
       $(
@@ -51,12 +64,15 @@ mod support {
     std::num::NonZeroIsize,
   );
 
+  /// Implements `TreeDisplay` for tuples up to 12 elements.
+  ///
+  /// Each tuple element is displayed as a labeled child with an index.
   macro_rules! impl_tuple_tree_display {
     ($($ty:ident $idx:tt),*) => {
       impl<$($ty: TreeDisplay),*> TreeDisplay for ($($ty,)*) {
-        #[allow(unused_variables)] // erroneous warning
+        #[allow(unused_variables)] // supress erroneous warning
         fn tree(&self, context: &Context) -> Tree {
-          #[allow(unused_mut)] // erroneous warning
+          #[allow(unused_mut)] // supress erroneous warning
           let mut tree = Tree::leaf(TypeName::new("tuple"));
           $(
             let node = self.$idx.tree(context).labeled(Member(format!(".{}", $idx)));
@@ -65,7 +81,7 @@ mod support {
           tree
         }
       }
-    };
+  };
   }
 
   // Manual expansion for each tuple size
@@ -83,11 +99,14 @@ mod support {
   impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10);
   impl_tuple_tree_display!(T0 0, T1 1, T2 2, T3 3, T4 4, T5 5, T6 6, T7 7, T8 8, T9 9, T10 10, T11 11);
 
+  /// `&str` is displayed as a string leaf, not a tree of characters.
   impl TreeDisplay for &str {
     fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(ToString::to_string(&self))
     }
   }
+
+  // ──── Smart pointers ──────────────────────────────────────────────────────────────────────────
 
   impl<T: TreeDisplay + ?Sized> TreeDisplay for &T {
     fn tree(&self, context: &Context) -> Tree {
@@ -137,6 +156,8 @@ mod support {
     }
   }
 
+  // ──── Option and Result ───────────────────────────────────────────────────────────────────────
+
   impl<T: TreeDisplay> TreeDisplay for Option<T> {
     fn tree(&self, context: &Context) -> Tree {
       match self {
@@ -154,6 +175,8 @@ mod support {
       }
     }
   }
+
+  // ──── Collections ─────────────────────────────────────────────────────────────────────────────
 
   impl<T: TreeDisplay, const N: usize> TreeDisplay for [T; N] {
     fn tree(&self, context: &Context) -> Tree {
@@ -271,6 +294,8 @@ mod support {
     }
   }
 
+  // ──── Path and file types ─────────────────────────────────────────────────────────────────────
+
   impl TreeDisplay for std::path::Path {
     fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{:?}", self))
@@ -295,6 +320,8 @@ mod support {
     }
   }
 
+  // ──── Time types ──────────────────────────────────────────────────────────────────────────────
+
   impl TreeDisplay for std::time::Duration {
     fn tree(&self, _: &Context) -> Tree {
       Tree::leaf(format!("{}s", self.as_secs_f64()))
@@ -312,6 +339,8 @@ mod support {
       Tree::leaf(format!("{:?}", self))
     }
   }
+
+  // ──── Range types ─────────────────────────────────────────────────────────────────────────
 
   impl<T: TreeDisplay + std::fmt::Debug + Clone + 'static> TreeDisplay for std::ops::Range<T> {
     fn tree(&self, _: &Context) -> Tree {
@@ -363,6 +392,8 @@ mod support {
       Tree::leaf(TypeName::new("RangeFull"))
     }
   }
+
+  // ──── Marker types ────────────────────────────────────────────────────────────────────────────
 
   impl<T> TreeDisplay for std::marker::PhantomData<T> {
     fn tree(&self, _: &Context) -> Tree {

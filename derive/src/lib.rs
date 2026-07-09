@@ -1,10 +1,59 @@
+//! Procedural macro for deriving `TreeDisplay`.
+//!
+//! This crate provides the `#[derive(TreeDisplay)]` macro, which generates
+//! tree representations of structs and enums. It should not be used directly;
+//! use the `tree-display` crate instead.
+//!
+//! # Field Attributes
+//!
+//! The following attributes can be applied to struct or enum variant fields:
+//!
+//! - `#[tree(map)]` - Apply a custom mapper from [`Context`]
+//! - `#[tree(ignore)]` - Exclude the field from the tree
+//! - `#[tree(label = "...")]` - Override the field's display label
+//! - `#[tree(unlabeled)]` - Display the field without a label
+//!
+//! # Example
+//! ```
+//! use tree_display::TreeDisplay;
+//!
+//! #[derive(TreeDisplay)]
+//! struct Person {
+//!     name: String,
+//!     #[tree(map)]
+//!     age: u32,
+//!     #[tree(ignore)]
+//!     id: u64,
+//!     #[tree(label = "full_name")]
+//!     name: String,
+//! }
+//! ```
+
 use darling::{Error, FromField};
 use proc_macro::TokenStream;
-use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro_crate::{crate_name, FoundCrate};
 use quote::quote;
-use syn::{Data, DeriveInput, Field, Fields, Ident, Index, Member, Variant, parse_macro_input};
+use syn::{parse_macro_input, Data, DeriveInput, Field, Fields, Ident, Index, Member, Variant};
 
+// ──── API ───────────────────────────────────────────────────────────────────────────────────────
+
+/// Derives `TreeDisplay` for structs and enums.
+///
+/// The following attributes can be applied to struct or enum variant fields:
+///
+/// - `#[tree(map)]` - Apply a custom mapper from [`Context`]
+/// - `#[tree(ignore)]` - Exclude the field from the tree
+/// - `#[tree(label = "...")]` - Override the field's display label
+/// - `#[tree(unlabeled)]` - Display the field without a label
+#[proc_macro_derive(TreeDisplay, attributes(tree))]
+pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
+  derive(tokens)
+}
+
+// ──── Impl ──────────────────────────────────────────────────────────────────────────────────────
+
+/// Converts a field index to a [`Member`] (named or unnamed).
 fn field_to_member(index: usize, field: &Field) -> Member {
   match &field.ident {
     Some(ident) => Member::Named(ident.clone()),
@@ -12,20 +61,27 @@ fn field_to_member(index: usize, field: &Field) -> Member {
   }
 }
 
+/// Creates an [`Ident`] from a string.
 fn string_to_ident(name: impl AsRef<str>) -> Ident {
   Ident::new(name.as_ref(), Span::call_site())
 }
 
+/// Attributes that can be applied to fields with `#[tree(...)]`.
 #[derive(Debug, Default, FromField)]
 #[darling(attributes(tree), default, and_then = Self::validate)]
 struct FieldAttributes {
+  /// Apply a custom mapper from [`Context`]
   map: bool,
+  /// Exclude this field from the tree
   ignore: bool,
+  /// Display the field without a label
   unlabeled: bool,
+  /// Override the field's display label
   label: Option<String>,
 }
 
 impl FieldAttributes {
+  /// Validates that attributes are not used in contradictory ways.
   fn validate(self) -> darling::Result<Self> {
     if self.unlabeled && self.label.is_some() {
       return Err(darling::Error::custom(
@@ -41,8 +97,8 @@ impl FieldAttributes {
   }
 }
 
-#[proc_macro_derive(TreeDisplay, attributes(tree))]
-pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
+/// Entry point for the derive macro.
+fn derive(tokens: TokenStream) -> TokenStream {
   let input = parse_macro_input!(tokens as DeriveInput);
   let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
   let type_ident = input.ident;
@@ -84,6 +140,7 @@ pub fn derive_tree_display(tokens: TokenStream) -> TokenStream {
   .into()
 }
 
+/// Generates the tree body for a struct.
 fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   let type_name = type_ident.to_string();
 
@@ -145,6 +202,7 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   }
 }
 
+/// Generates the tree body for an enum.
 fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
   let mut arms = Vec::new();
   for variant in variants {
@@ -280,6 +338,7 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
   }
 }
 
+/// Processes a single field and generates code to add it to the tree.
 fn process_field(
   access: TokenStream2,
   member: Member,

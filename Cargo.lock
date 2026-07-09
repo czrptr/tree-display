@@ -147,17 +147,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive"
-version = "0.1.0"
-dependencies = [
- "darling",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -393,12 +382,23 @@ dependencies = [
 
 [[package]]
 name = "tree-display"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anstream",
  "anstyle",
  "chumsky",
- "derive",
+ "tree-display-derive",
+]
+
+[[package]]
+name = "tree-display-derive"
+version = "1.0.0"
+dependencies = [
+ "darling",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
