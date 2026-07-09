@@ -14,7 +14,7 @@
 ///
 /// ## Example
 /// ```no_run
-/// use tree_display::graphics::Graphics;
+/// use tree_display::Graphics;
 ///
 /// // Use ASCII characters for maximum compatibility
 /// let ascii = Graphics::ASCII;

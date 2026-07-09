@@ -16,7 +16,7 @@ pub use inner::Color;
 ///
 /// ## Example
 /// ```no_run
-/// use tree_display::color::Colors;
+/// use tree_display::Colors;
 ///
 /// let dark = Colors::VSCODE_DARK_PLUS;
 /// let light = Colors::VSCODE_LIGHT_PLUS;

@@ -17,7 +17,7 @@ use std::any::Any;
 ///
 /// ## Example
 /// ```no_run
-/// use tree_display::{Formatter, theme::Theme};
+/// use tree_display::{Formatter, Theme};
 ///
 /// let value = 0;
 /// let output = Formatter::of(&value)

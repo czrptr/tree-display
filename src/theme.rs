@@ -17,7 +17,7 @@ use super::graphics::Graphics;
 ///
 /// ## Example
 /// ```no_run
-/// use tree_display::{theme::Theme, color::Colors, graphics::Graphics};
+/// use tree_display::{Theme, Colors, Graphics};
 ///
 /// // Use the default theme
 /// let theme = Theme::default();

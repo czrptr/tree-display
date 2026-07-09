@@ -42,11 +42,15 @@ pub mod graphics;
 pub mod support;
 pub mod theme;
 
-use context::Context;
 use format::Content;
 
+// Re-export the most commonly used types at root
+pub use color::Colors;
+pub use context::Context;
 pub use derive::TreeDisplay;
 pub use format::Formatter;
+pub use graphics::Graphics;
+pub use theme::Theme;
 
 // ──── API ───────────────────────────────────────────────────────────────────────────────────────
 
