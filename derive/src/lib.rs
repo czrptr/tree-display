@@ -8,7 +8,7 @@
 //!
 //! The following attributes can be applied to struct or enum variant fields:
 //!
-//! - `#[tree(map)]` - Apply a custom mapper from [`Context`]
+//! - `#[tree(map)]` - Apply a custom mapper from `Context`
 //! - `#[tree(ignore)]` - Exclude the field from the tree
 //! - `#[tree(label = "...")]` - Override the field's display label
 //! - `#[tree(unlabeled)]` - Display the field without a label
@@ -26,7 +26,7 @@ use syn::{parse_macro_input, Data, DeriveInput, Field, Fields, Ident, Index, Mem
 ///
 /// The following attributes can be applied to struct or enum variant fields:
 ///
-/// - `#[tree(map)]` - Apply a custom mapper from [`Context`]
+/// - `#[tree(map)]` - Apply a custom mapper from `Context`
 /// - `#[tree(ignore)]` - Exclude the field from the tree
 /// - `#[tree(label = "...")]` - Override the field's display label
 /// - `#[tree(unlabeled)]` - Display the field without a label

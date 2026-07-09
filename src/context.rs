@@ -50,7 +50,7 @@ impl Context {
   /// be used when displaying values of type `T` in the tree.
   ///
   /// To apply a mapper to a specific field in a struct or enum, use the
-  /// `#[tree(map)]` attribute on that field when deriving [`TreeDisplay`].
+  /// `#[tree(map)]` attribute on that field when deriving [`TreeDisplay`](`super::TreeDisplay`).
   ///
   /// ## Type Parameters
   /// - `T`: The input type to map from
