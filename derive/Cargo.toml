@@ -9,10 +9,11 @@ Derives TreeDisplay for rendering data structures as syntax-highlighted trees.
 """
 categories = ["development-tools::procedural-macro-helpers"]
 
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 rust-version = "1.75"
 readme = "README.md"
+license = "MIT"
 license-file = "../LICENSE"
 
 [lib]
