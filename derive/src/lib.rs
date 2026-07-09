@@ -96,10 +96,25 @@ fn derive_struct(type_ident: &Ident, fields: Fields) -> TokenStream2 {
   }
 
   let is_newtype = matches!(fields, Fields::Unnamed(_)) && fields.len() == 1;
-
   if is_newtype {
     let field = fields.iter().next().expect("there is exactly one element");
     let member = field_to_member(0, field);
+    let attrs = match FieldAttributes::from_field(field) {
+      Ok(attrs) => attrs,
+      Err(err) => return err.write_errors().into(),
+    };
+
+    if attrs.map {
+      return quote! {
+        if let Some(mapper) = context.mappers.get(&type_of(&self.#member)) {
+          Tree::leaf(mapper(&self.#member))
+        }
+        else
+        {
+          self.#member.tree(context)
+        }
+      };
+    }
     return quote!(self.#member.tree(context));
   }
 
@@ -189,6 +204,31 @@ fn derive_enum(variants: Vec<Variant>) -> TokenStream2 {
         if is_newtype {
           // For newtype variants, forward directly without wrapping
           let ident = string_to_ident("__field0");
+          let field = fields
+            .unnamed
+            .first()
+            .expect("there is exactly one element");
+
+          let attrs = match FieldAttributes::from_field(field) {
+            Ok(attrs) => attrs,
+            Err(err) => return err.write_errors().into(),
+          };
+
+          if attrs.map {
+            arms.push(quote! {
+              Self::#variant_ident( #ident ) => {
+                if let Some(mapper) = context.mappers.get(&type_of(&#ident)) {
+                  Tree::leaf(mapper(&#ident))
+                }
+                else
+                {
+                  #ident.tree(context)
+                }
+              }
+            });
+            continue;
+          }
+
           arms.push(quote! {
             Self::#variant_ident( #ident ) => {
               #ident.tree(context)
