@@ -1,7 +1,7 @@
 use crate::{
   Tree, TreeDisplay,
   context::Context,
-  format::{Content, Index, Member, TypeName},
+  format::{Content, Index, Keyword, Member, TypeName},
 };
 
 mod support {
@@ -141,7 +141,7 @@ mod support {
     fn tree(&self, context: &Context) -> Tree {
       match self {
         Some(value) => value.tree(context),
-        None => Tree::leaf("None"),
+        None => Tree::leaf(Keyword::new("None")),
       }
     }
   }

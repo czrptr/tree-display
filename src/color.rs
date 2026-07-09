@@ -11,7 +11,8 @@ pub type Style = ();
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Colors {
   pub types: Option<Color>,
-  pub fields: Option<Color>,
+  pub keywords: Option<Color>,
+  pub members: Option<Color>,
   pub values: Option<Color>,
   pub strings: Option<Color>,
   pub lines: Option<Color>,
@@ -23,7 +24,8 @@ pub struct Colors {
 impl Colors {
   pub const NONE: Self = Self {
     types: None,
-    fields: None,
+    keywords: None,
+    members: None,
     values: None,
     strings: None,
     lines: None,
@@ -32,7 +34,8 @@ impl Colors {
 
   pub const VSCODE_DARK_PLUS: Self = Self {
     types: Some(ansi256(79)),
-    fields: Some(ansi256(153)),
+    keywords: Some(ansi256(74)),
+    members: Some(ansi256(153)),
     values: Some(ansi256(187)),
     strings: Some(ansi256(173)),
     lines: Some(ansi256(32)),
@@ -52,8 +55,13 @@ impl Colors {
     self
   }
 
-  pub const fn fields(mut self, color: Color) -> Self {
-    self.fields = Some(color);
+  pub const fn keywords(mut self, color: Color) -> Self {
+    self.keywords = Some(color);
+    self
+  }
+
+  pub const fn members(mut self, color: Color) -> Self {
+    self.members = Some(color);
     self
   }
 
@@ -79,11 +87,13 @@ impl Colors {
 
   pub const fn all(mut self, color: Color) -> Self {
     let c = Some(color);
-    self.lines = c;
     self.types = c;
-    self.fields = c;
-    self.fields = c;
+    self.keywords = c;
+    self.members = c;
+    self.values = c;
     self.strings = c;
+    self.lines = c;
+    self.vline = c;
     self
   }
 }

@@ -44,11 +44,19 @@ impl<'value, 'context, T: TreeDisplay> Formatter<'value, 'context, T> {
   }
 }
 
-pub struct Member(pub String);
-
 pub struct TypeName(pub String);
 
+pub struct Keyword(pub String);
+
+pub struct Member(pub String);
+
 pub struct Index(pub Box<dyn Content>);
+
+impl TypeName {
+  pub fn new(name: impl Into<String>) -> Self {
+    Self(name.into())
+  }
+}
 
 impl Member {
   pub fn new(name: impl Into<String>) -> Self {
@@ -56,7 +64,7 @@ impl Member {
   }
 }
 
-impl TypeName {
+impl Keyword {
   pub fn new(name: impl Into<String>) -> Self {
     Self(name.into())
   }
@@ -76,9 +84,15 @@ impl Content for TypeName {
   }
 }
 
+impl Content for Keyword {
+  fn to_string(&self, theme: &Theme) -> String {
+    self.0.clone().fg(theme.colors.keywords)
+  }
+}
+
 impl Content for Member {
   fn to_string(&self, theme: &Theme) -> String {
-    self.0.clone().fg(theme.colors.fields)
+    self.0.clone().fg(theme.colors.members)
   }
 }
 
