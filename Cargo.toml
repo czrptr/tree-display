@@ -22,12 +22,11 @@ keywords = [
   "pretty-print",
 ]
 
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 rust-version = "1.75"
 readme = "README.md"
 license = "MIT"
-license-file = "LICENSE"
 
 [workspace]
 members = ["derive"]
